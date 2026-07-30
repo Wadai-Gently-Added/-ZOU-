@@ -36,24 +36,31 @@
     flex-shrink:0;
   }
   #topbar h1{ font-size:15px; font-weight:600; margin:0; letter-spacing:.02em; color:var(--sub);}
-  #listBtn{
-    background:none; border:none; color:var(--accent);
-    font-size:14px; font-weight:600; padding:6px 4px;
+  .topbtn{
+    background:var(--panel); border:1px solid var(--line);
+    color:var(--accent); font-size:12.5px; font-weight:600;
+    padding:7px 10px; border-radius:8px;
   }
+  .topbtn:active{ background:#262a31; }
+  .topbtn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); }
 
   /* ---------- viewer ---------- */
   #viewerWrap{
     flex:1; position:relative; overflow:hidden;
+    background:#fff;
+  }
+  #viewerWrap.bg-checker{
+    background-color:#fff;
     background-image:
-      linear-gradient(45deg, #23262c 25%, transparent 25%),
-      linear-gradient(-45deg, #23262c 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #23262c 75%),
-      linear-gradient(-45deg, transparent 75%, #23262c 75%);
+      linear-gradient(45deg, #d9dadd 25%, transparent 25%),
+      linear-gradient(-45deg, #d9dadd 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #d9dadd 75%),
+      linear-gradient(-45deg, transparent 75%, #d9dadd 75%);
     background-size:24px 24px;
     background-position:0 0, 0 12px, 12px -12px, -12px 0px;
   }
-  #viewerWrap.bg-white{ background:#fff; background-image:none; }
-  #viewerWrap.bg-black{ background:#000; background-image:none; }
+  #viewerWrap.bg-white{ background:#fff; }
+  #viewerWrap.bg-black{ background:#000; }
 
   #stage{
     position:absolute; top:50%; left:50%;
@@ -68,6 +75,18 @@
     color:var(--sub); font-size:14px; line-height:1.6;
   }
   #empty .big{ font-size:15px; color:var(--text); font-weight:600;}
+
+  /* ---------- focus mode ---------- */
+  #exitFocusBtn{
+    position:fixed; right:14px; bottom:calc(14px + env(safe-area-inset-bottom));
+    z-index:15; display:none; align-items:center; justify-content:center;
+    background:rgba(28,31,36,.8); color:#fff; border:1px solid rgba(255,255,255,.25);
+    width:42px; height:42px; border-radius:21px; font-size:17px;
+  }
+  body.focus-mode #topbar, body.focus-mode #bottombar{ display:none; }
+  body.focus-mode #exitFocusBtn{ display:flex; }
+
+  .btn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); font-weight:700; }
 
   /* ---------- bottom controls ---------- */
   #bottombar{
@@ -142,6 +161,8 @@
     background:none; border:none; color:#e0625c; font-size:12px; padding:6px 8px;
   }
   #savedEmpty{ color:var(--sub); font-size:13px; text-align:center; padding:24px 0; }
+  .subhead{ font-size:11.5px; color:var(--sub); margin:2px 0 6px; font-weight:600; letter-spacing:.03em; }
+  .small-empty{ color:var(--sub); font-size:12.5px; text-align:center; padding:14px 0; }
 
   input[type=file]{ display:none; }
 </style>
@@ -151,16 +172,21 @@
 
   <div id="topbar">
     <h1>SVG VIEWER</h1>
-    <button id="listBtn">保存済み</button>
+    <div style="display:flex; gap:6px;">
+      <button id="codeBtn" class="topbtn">🖊 コード</button>
+      <button id="listBtn" class="topbtn">📂 マイSVG</button>
+    </div>
   </div>
 
-  <div id="viewerWrap" class="bg-checker">
+  <div id="viewerWrap" class="bg-white">
     <div id="empty">
       <div class="big">まだSVGが読み込まれてないみゅ</div>
       <div>下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
     </div>
     <div id="stage" style="display:none"></div>
   </div>
+
+  <button id="exitFocusBtn">⤢</button>
 
   <div id="bottombar">
     <div class="row">
@@ -170,8 +196,8 @@
     </div>
     <div class="row">
       <div class="bgtoggle" style="flex:1">
-        <button data-bg="checker" class="active">透過</button>
-        <button data-bg="white">白</button>
+        <button data-bg="checker">透過</button>
+        <button data-bg="white" class="active">白</button>
         <button data-bg="black">黒</button>
       </div>
       <button class="btn small" id="btnZoomOut">−</button>
@@ -179,7 +205,13 @@
       <button class="btn small" id="btnZoomIn">＋</button>
     </div>
     <div class="row">
-      <button class="btn accent" id="btnSave">この内容を保存</button>
+      <button class="btn" id="btnWake">☀️ 常時点灯</button>
+      <button class="btn" id="btnFocus">👁 集中表示</button>
+      <button class="btn" id="btnPrintView">🖨 画像+コード</button>
+    </div>
+    <div class="row">
+      <button class="btn accent" id="btnSave">アプリ内に保存</button>
+      <button class="btn accent" id="btnDownload">📥 ファイル保存</button>
     </div>
   </div>
 
@@ -206,6 +238,43 @@
   <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
   <div class="sheet-close" id="listCancel">閉じる</div>
 </div>
+
+<!-- code edit sheet -->
+<div class="sheet-backdrop" id="codeBackdrop"></div>
+<div class="sheet" id="codeSheet" style="max-height:85vh">
+  <h2>SVGコードを編集</h2>
+  <textarea id="codeBox" style="height:220px" placeholder="表示中のSVGがまだ無いみゅ"></textarea>
+  <div class="row">
+    <button class="btn accent" id="btnCodeApply">反映する</button>
+  </div>
+  <div class="sheet-close" id="codeCancel">閉じる</div>
+</div>
+
+<!-- print / photo sheet -->
+<div class="sheet-backdrop" id="printBackdrop"></div>
+<div class="sheet" id="printSheet" style="max-height:88vh">
+  <h2>画像＋コード（撮影・印刷用）</h2>
+  <div id="printImage" style="background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; max-height:38vh; overflow:auto; display:flex; align-items:center; justify-content:center;"></div>
+  <pre id="printCode" style="background:#101215; color:#d7d9dc; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:10.5px; line-height:1.5; overflow:auto; max-height:28vh; white-space:pre-wrap; word-break:break-all; margin:0 0 10px;"></pre>
+  <div class="row">
+    <button class="btn accent" id="btnDoPrint">🖨 印刷する</button>
+  </div>
+  <div class="sheet-close" id="printCancel">閉じる</div>
+</div>
+
+<style>
+  @media print{
+    body *{ visibility:hidden; }
+    #printSheet, #printSheet *{ visibility:visible; }
+    #printSheet{
+      position:absolute; left:0; top:0; width:100%;
+      max-height:none; transform:none; border:none; background:#fff; color:#000;
+    }
+    #printSheet .sheet-close, #printSheet #btnDoPrint{ display:none; }
+    #printCode{ color:#000; background:#fff; border-color:#ccc; max-height:none; }
+    #printImage{ max-height:none; }
+  }
+</style>
 
 <script>
 (function(){
@@ -339,9 +408,10 @@
     btn.onclick = ()=>{
       document.querySelectorAll('.bgtoggle button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      wrap.classList.remove('bg-white','bg-black');
+      wrap.classList.remove('bg-white','bg-black','bg-checker');
       if(btn.dataset.bg === 'white') wrap.classList.add('bg-white');
       if(btn.dataset.bg === 'black') wrap.classList.add('bg-black');
+      if(btn.dataset.bg === 'checker') wrap.classList.add('bg-checker');
     };
   });
 
@@ -399,6 +469,106 @@
     arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString() });
     setSaved(arr.slice(0, 100));
     alert('保存したみゅ！');
+  };
+
+  document.getElementById('btnDownload').onclick = ()=>{
+    const svgEl = stage.querySelector('svg');
+    if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
+    const defaultName = (currentName || 'svg-export').replace(/\.[a-zA-Z0-9]+$/, '');
+    const name = prompt('ファイル名を入れてね（拡張子は自動でつくよ）', defaultName);
+    if(name === null) return;
+    let svgText = svgEl.outerHTML;
+    if(!svgText.includes('xmlns=')){
+      svgText = svgText.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    const blob = new Blob([svgText], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (name.trim() || 'svg-export') + '.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(url), 3000);
+  };
+
+  /* ---- wake lock (常時点灯) ---- */
+  let wakeLock = null;
+  let wakeLockWanted = false;
+  async function requestWakeLock(){
+    if(!('wakeLock' in navigator)) return false;
+    try{
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+      return true;
+    }catch(e){ return false; }
+  }
+  document.getElementById('btnWake').onclick = async ()=>{
+    const btn = document.getElementById('btnWake');
+    if(wakeLockWanted){
+      wakeLockWanted = false;
+      if(wakeLock){ try{ await wakeLock.release(); }catch(e){} wakeLock = null; }
+      btn.classList.remove('active');
+    } else {
+      if(!('wakeLock' in navigator)){
+        alert('この端末/ブラウザはスリープ防止に対応してないみゅ（iOSはSafari16.4以降が必要）');
+        return;
+      }
+      const ok = await requestWakeLock();
+      if(ok){ wakeLockWanted = true; btn.classList.add('active'); }
+      else alert('スリープ防止をオンにできなかったみゅ');
+    }
+  };
+  document.addEventListener('visibilitychange', ()=>{
+    if(wakeLockWanted && document.visibilityState === 'visible' && !wakeLock){
+      requestWakeLock();
+    }
+  });
+
+  /* ---- focus mode (UIを隠す) ---- */
+  document.getElementById('btnFocus').onclick = ()=>{
+    document.body.classList.add('focus-mode');
+  };
+  document.getElementById('exitFocusBtn').onclick = ()=>{
+    document.body.classList.remove('focus-mode');
+  };
+
+  /* ---- print / photo sheet ---- */
+  const printSheet = document.getElementById('printSheet');
+  const printBackdrop = document.getElementById('printBackdrop');
+  document.getElementById('btnPrintView').onclick = ()=>{
+    const svgEl = stage.querySelector('svg');
+    if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
+    document.getElementById('printImage').innerHTML = svgEl.outerHTML;
+    document.getElementById('printCode').textContent = svgEl.outerHTML;
+    printSheet.classList.add('open'); printBackdrop.classList.add('open');
+  };
+  document.getElementById('printCancel').onclick = ()=>{
+    printSheet.classList.remove('open'); printBackdrop.classList.remove('open');
+  };
+  printBackdrop.onclick = ()=>{
+    printSheet.classList.remove('open'); printBackdrop.classList.remove('open');
+  };
+  document.getElementById('btnDoPrint').onclick = ()=> window.print();
+
+  /* ---- code edit sheet ---- */
+  const codeSheet = document.getElementById('codeSheet');
+  const codeBackdrop = document.getElementById('codeBackdrop');
+  const codeBox = document.getElementById('codeBox');
+  function openCode(){
+    const svgEl = stage.querySelector('svg');
+    codeBox.value = svgEl ? svgEl.outerHTML : '';
+    codeSheet.classList.add('open'); codeBackdrop.classList.add('open');
+  }
+  function closeCode(){ codeSheet.classList.remove('open'); codeBackdrop.classList.remove('open'); }
+  document.getElementById('codeBtn').onclick = openCode;
+  document.getElementById('codeCancel').onclick = closeCode;
+  codeBackdrop.onclick = closeCode;
+  document.getElementById('btnCodeApply').onclick = ()=>{
+    const val = codeBox.value;
+    if(!val.trim()){ alert('コードが空みゅ'); return; }
+    loadSVG(val, currentName);
+    closeCode();
   };
 
   const listSheet = document.getElementById('listSheet');
