@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SVG Viewer</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1c1f24;
+    --line: #2a2e35;
+    --text: #e8e9eb;
+    --sub: #8b909a;
+    --accent: #5ec9b5;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    overscroll-behavior:none;
+    user-select:none;
+  }
+  #app{
+    display:flex; flex-direction:column; height:100vh; height:100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ---------- top bar ---------- */
+  #topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #topbar h1{ font-size:15px; font-weight:600; margin:0; letter-spacing:.02em; color:var(--sub);}
+  #listBtn{
+    background:none; border:none; color:var(--accent);
+    font-size:14px; font-weight:600; padding:6px 4px;
+  }
+
+  /* ---------- viewer ---------- */
+  #viewerWrap{
+    flex:1; position:relative; overflow:hidden;
+    background-image:
+      linear-gradient(45deg, #23262c 25%, transparent 25%),
+      linear-gradient(-45deg, #23262c 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #23262c 75%),
+      linear-gradient(-45deg, transparent 75%, #23262c 75%);
+    background-size:24px 24px;
+    background-position:0 0, 0 12px, 12px -12px, -12px 0px;
+  }
+  #viewerWrap.bg-white{ background:#fff; background-image:none; }
+  #viewerWrap.bg-black{ background:#000; background-image:none; }
+
+  #stage{
+    position:absolute; top:50%; left:50%;
+    transform-origin:0 0;
+    will-change:transform;
+  }
+  #stage svg{ display:block; max-width:none; }
+
+  #empty{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; padding:30px; text-align:center;
+    color:var(--sub); font-size:14px; line-height:1.6;
+  }
+  #empty .big{ font-size:15px; color:var(--text); font-weight:600;}
+
+  /* ---------- bottom controls ---------- */
+  #bottombar{
+    flex-shrink:0; border-top:1px solid var(--line);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .row{ display:flex; gap:8px; }
+  .btn{
+    flex:1; background:var(--panel); border:1px solid var(--line);
+    color:var(--text); padding:11px 8px; border-radius:10px;
+    font-size:13px; font-weight:500; text-align:center;
+  }
+  .btn:active{ background:#262a31; }
+  .btn.accent{ background:var(--accent); color:#0d1210; border-color:var(--accent); font-weight:700;}
+  .btn.small{ flex:0 0 44px; font-size:16px; padding:11px 0; }
+  .bgtoggle{ display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .bgtoggle button{
+    flex:1; background:var(--panel); border:none; color:var(--sub);
+    padding:9px 0; font-size:12px; border-right:1px solid var(--line);
+  }
+  .bgtoggle button:last-child{ border-right:none; }
+  .bgtoggle button.active{ background:var(--accent); color:#0d1210; font-weight:700; }
+
+  textarea#pasteArea{
+    display:none;
+  }
+
+  /* ---------- paste sheet ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:none; z-index:20;
+  }
+  .sheet-backdrop.open{ display:block; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:21;
+    background:var(--panel); border-top:1px solid var(--line);
+    border-radius:16px 16px 0 0;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    transform:translateY(100%); transition:transform .25s ease;
+    max-height:80vh; display:flex; flex-direction:column;
+  }
+  .sheet.open{ transform:translateY(0); }
+  .sheet h2{ font-size:15px; margin:0 0 10px; color:var(--text); }
+  .sheet textarea{
+    width:100%; height:140px; background:#101215; color:var(--text);
+    border:1px solid var(--line); border-radius:10px; padding:10px;
+    font-family:ui-monospace,Menlo,monospace; font-size:12px; resize:none;
+    margin-bottom:10px;
+  }
+  .sheet .row{ margin-bottom:8px; }
+  .sheet-close{
+    text-align:center; color:var(--sub); font-size:13px; padding:8px; margin-top:2px;
+  }
+
+  /* ---------- saved list sheet ---------- */
+  #savedList{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .saved-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 4px; border-bottom:1px solid var(--line);
+  }
+  .saved-item .thumb{
+    width:44px; height:44px; border-radius:8px; background:#101215;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    overflow:hidden; border:1px solid var(--line);
+  }
+  .saved-item .thumb svg{ width:100%; height:100%; }
+  .saved-item .meta{ flex:1; min-width:0; }
+  .saved-item .name{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .saved-item .date{ font-size:11px; color:var(--sub); }
+  .saved-item .del{
+    background:none; border:none; color:#e0625c; font-size:12px; padding:6px 8px;
+  }
+  #savedEmpty{ color:var(--sub); font-size:13px; text-align:center; padding:24px 0; }
+
+  input[type=file]{ display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <h1>SVG VIEWER</h1>
+    <button id="listBtn">保存済み</button>
+  </div>
+
+  <div id="viewerWrap" class="bg-checker">
+    <div id="empty">
+      <div class="big">まだSVGが読み込まれてないみゅ</div>
+      <div>下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
+    </div>
+    <div id="stage" style="display:none"></div>
+  </div>
+
+  <div id="bottombar">
+    <div class="row">
+      <button class="btn" id="btnClipboard">📋 クリップボード</button>
+      <button class="btn" id="btnPaste">✏️ 貼り付け</button>
+      <button class="btn" id="btnFile">📁 ファイル</button>
+    </div>
+    <div class="row">
+      <div class="bgtoggle" style="flex:1">
+        <button data-bg="checker" class="active">透過</button>
+        <button data-bg="white">白</button>
+        <button data-bg="black">黒</button>
+      </div>
+      <button class="btn small" id="btnZoomOut">−</button>
+      <button class="btn small" id="btnReset">⟲</button>
+      <button class="btn small" id="btnZoomIn">＋</button>
+    </div>
+    <div class="row">
+      <button class="btn accent" id="btnSave">この内容を保存</button>
+    </div>
+  </div>
+
+</div>
+
+<input type="file" id="fileInput" accept=".svg,image/svg+xml" multiple>
+
+<!-- paste sheet -->
+<div class="sheet-backdrop" id="pasteBackdrop"></div>
+<div class="sheet" id="pasteSheet">
+  <h2>SVGコードを貼り付け</h2>
+  <textarea id="pasteBox" placeholder="&lt;svg&gt;...&lt;/svg&gt; をここにペースト"></textarea>
+  <div class="row">
+    <button class="btn accent" id="btnPasteLoad">表示する</button>
+  </div>
+  <div class="sheet-close" id="pasteCancel">閉じる</div>
+</div>
+
+<!-- saved list sheet -->
+<div class="sheet-backdrop" id="listBackdrop"></div>
+<div class="sheet" id="listSheet" style="max-height:70vh">
+  <h2>保存済みSVG</h2>
+  <div id="savedList"></div>
+  <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
+  <div class="sheet-close" id="listCancel">閉じる</div>
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const empty = document.getElementById('empty');
+  const wrap = document.getElementById('viewerWrap');
+  const STORE_KEY = 'svgViewerSavedItems';
+
+  let scale = 1, tx = 0, ty = 0;
+  let currentName = null;
+
+  function applyTransform(){
+    stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
+  function loadSVG(text, name){
+    if(!text || !text.trim().startsWith('<')){
+      alert('SVGとして読み込めなかったみゅ。中身を確認してね');
+      return;
+    }
+    stage.innerHTML = text;
+    stage.style.display = 'block';
+    empty.style.display = 'none';
+    currentName = name || null;
+    // reset view centered
+    scale = 1; tx = 0; ty = 0;
+    const svgEl = stage.querySelector('svg');
+    if(svgEl){
+      // center based on intrinsic size if available
+      let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
+      let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
+      if(!w) w = svgEl.width && svgEl.width.baseVal ? svgEl.width.baseVal.value : 300;
+      if(!h) h = svgEl.height && svgEl.height.baseVal ? svgEl.height.baseVal.value : 300;
+      tx = -w/2; ty = -h/2;
+    }
+    applyTransform();
+  }
+
+  /* ---- pinch / pan ---- */
+  let pointers = new Map();
+  let lastDist = null, lastMid = null;
+  let panStart = null;
+
+  wrap.addEventListener('pointerdown', e=>{
+    wrap.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pointers.size === 1){
+      panStart = { x:e.clientX, y:e.clientY, tx, ty };
+    } else if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      lastDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      lastMid = { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2 };
+    }
+  });
+
+  wrap.addEventListener('pointermove', e=>{
+    if(!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pointers.size === 1 && panStart){
+      tx = panStart.tx + (e.clientX - panStart.x);
+      ty = panStart.ty + (e.clientY - panStart.y);
+      applyTransform();
+    } else if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      const mid = { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2 };
+      if(lastDist){
+        const factor = dist / lastDist;
+        const newScale = Math.min(20, Math.max(0.05, scale * factor));
+        // zoom around midpoint
+        const rect = wrap.getBoundingClientRect();
+        const cx = mid.x - rect.left - rect.width/2;
+        const cy = mid.y - rect.top - rect.height/2;
+        tx = cx - (cx - tx) * (newScale/scale);
+        ty = cy - (cy - ty) * (newScale/scale);
+        scale = newScale;
+        applyTransform();
+      }
+      lastDist = dist; lastMid = mid;
+    }
+  });
+
+  function endPointer(e){
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2){ lastDist = null; }
+    if(pointers.size === 0){ panStart = null; }
+  }
+  wrap.addEventListener('pointerup', endPointer);
+  wrap.addEventListener('pointercancel', endPointer);
+
+  let lastTap = 0;
+  wrap.addEventListener('pointerup', e=>{
+    const now = Date.now();
+    if(now - lastTap < 280 && pointers.size === 0){
+      scale = 1; tx = 0; ty = 0;
+      const svgEl = stage.querySelector('svg');
+      if(svgEl){
+        let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
+        let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
+        if(w && h){ tx = -w/2; ty = -h/2; }
+      }
+      applyTransform();
+    }
+    lastTap = now;
+  });
+
+  /* ---- zoom buttons ---- */
+  document.getElementById('btnZoomIn').onclick = ()=>{ scale = Math.min(20, scale*1.3); applyTransform(); };
+  document.getElementById('btnZoomOut').onclick = ()=>{ scale = Math.max(0.05, scale/1.3); applyTransform(); };
+  document.getElementById('btnReset').onclick = ()=>{
+    scale = 1; tx=0; ty=0;
+    const svgEl = stage.querySelector('svg');
+    if(svgEl){
+      let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
+      let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
+      if(w && h){ tx = -w/2; ty = -h/2; }
+    }
+    applyTransform();
+  };
+
+  /* ---- background toggle ---- */
+  document.querySelectorAll('.bgtoggle button').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.bgtoggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      wrap.classList.remove('bg-white','bg-black');
+      if(btn.dataset.bg === 'white') wrap.classList.add('bg-white');
+      if(btn.dataset.bg === 'black') wrap.classList.add('bg-black');
+    };
+  });
+
+  /* ---- clipboard ---- */
+  document.getElementById('btnClipboard').onclick = async ()=>{
+    try{
+      const text = await navigator.clipboard.readText();
+      loadSVG(text, 'クリップボードから');
+    }catch(err){
+      alert('クリップボードを読めなかったみゅ。Safariの設定で許可が必要な場合があるよ。「貼り付け」ボタンから手動で貼ってね');
+    }
+  };
+
+  /* ---- paste sheet ---- */
+  const pasteSheet = document.getElementById('pasteSheet');
+  const pasteBackdrop = document.getElementById('pasteBackdrop');
+  function openPaste(){ pasteSheet.classList.add('open'); pasteBackdrop.classList.add('open'); }
+  function closePaste(){ pasteSheet.classList.remove('open'); pasteBackdrop.classList.remove('open'); }
+  document.getElementById('btnPaste').onclick = openPaste;
+  document.getElementById('pasteCancel').onclick = closePaste;
+  pasteBackdrop.onclick = closePaste;
+  document.getElementById('btnPasteLoad').onclick = ()=>{
+    const val = document.getElementById('pasteBox').value;
+    loadSVG(val, '手動貼り付け');
+    closePaste();
+  };
+
+  /* ---- file input ---- */
+  document.getElementById('btnFile').onclick = ()=> document.getElementById('fileInput').click();
+  document.getElementById('fileInput').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=> loadSVG(reader.result, file.name);
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  /* ---- save / list ---- */
+  function getSaved(){
+    try{ return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+    catch(e){ return []; }
+  }
+  function setSaved(arr){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
+    catch(e){ alert('保存に失敗したみゅ（容量オーバーかも）'); }
+  }
+
+  document.getElementById('btnSave').onclick = ()=>{
+    const svgEl = stage.querySelector('svg');
+    if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
+    const name = prompt('保存名を入れてね', currentName || 'SVG ' + new Date().toLocaleString('ja-JP'));
+    if(name === null) return;
+    const arr = getSaved();
+    arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString() });
+    setSaved(arr.slice(0, 100));
+    alert('保存したみゅ！');
+  };
+
+  const listSheet = document.getElementById('listSheet');
+  const listBackdrop = document.getElementById('listBackdrop');
+  function renderList(){
+    const arr = getSaved();
+    const listEl = document.getElementById('savedList');
+    const emptyEl = document.getElementById('savedEmpty');
+    listEl.innerHTML = '';
+    if(arr.length === 0){ emptyEl.style.display='block'; return; }
+    emptyEl.style.display='none';
+    arr.forEach((item, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'saved-item';
+      const d = new Date(item.savedAt);
+      row.innerHTML = `
+        <div class="thumb">${item.content}</div>
+        <div class="meta">
+          <div class="name">${item.name}</div>
+          <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <button class="del" data-idx="${idx}">削除</button>
+      `;
+      row.querySelector('.thumb').addEventListener('click', ()=>{
+        loadSVG(item.content, item.name);
+        closeList();
+      });
+      row.querySelector('.del').addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        const cur = getSaved();
+        cur.splice(idx,1);
+        setSaved(cur);
+        renderList();
+      });
+      listEl.appendChild(row);
+    });
+  }
+  function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
+  function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
+  document.getElementById('listBtn').onclick = openList;
+  document.getElementById('listCancel').onclick = closeList;
+  listBackdrop.onclick = closeList;
+
+})();
+</script>
+</body>
+</html>
