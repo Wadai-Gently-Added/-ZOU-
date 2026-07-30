@@ -221,6 +221,28 @@
     stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
 
+  function fitToView(){
+    const svgEl = stage.querySelector('svg');
+    if(!svgEl){ scale = 1; tx = 0; ty = 0; applyTransform(); return; }
+    let bbox = null;
+    try{ bbox = svgEl.getBBox(); }catch(e){}
+    if(!bbox || !bbox.width || !bbox.height){
+      scale = 1; tx = 0; ty = 0; applyTransform(); return;
+    }
+    const rect = wrap.getBoundingClientRect();
+    const availW = rect.width * 0.86;
+    const availH = rect.height * 0.86;
+    let s = Math.min(availW / bbox.width, availH / bbox.height);
+    if(!isFinite(s) || s <= 0) s = 1;
+    scale = Math.min(s, 10);
+    // center the SVG's actual content box (not just its 0,0 origin)
+    const cx = bbox.x + bbox.width / 2;
+    const cy = bbox.y + bbox.height / 2;
+    tx = -cx * scale;
+    ty = -cy * scale;
+    applyTransform();
+  }
+
   function loadSVG(text, name){
     if(!text || !text.trim().startsWith('<')){
       alert('SVGとして読み込めなかったみゅ。中身を確認してね');
@@ -230,18 +252,20 @@
     stage.style.display = 'block';
     empty.style.display = 'none';
     currentName = name || null;
-    // reset view centered
-    scale = 1; tx = 0; ty = 0;
+
     const svgEl = stage.querySelector('svg');
     if(svgEl){
-      // center based on intrinsic size if available
-      let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
-      let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
-      if(!w) w = svgEl.width && svgEl.width.baseVal ? svgEl.width.baseVal.value : 300;
-      if(!h) h = svgEl.height && svgEl.height.baseVal ? svgEl.height.baseVal.value : 300;
-      tx = -w/2; ty = -h/2;
+      // never let the svg's own box clip content that sits outside it
+      svgEl.style.overflow = 'visible';
+      // if a viewBox exists, lock rendered size to it so 1 content
+      // unit = 1 css px, keeping our zoom/pan math accurate
+      const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+      if(vb && vb.width && vb.height){
+        svgEl.style.width = vb.width + 'px';
+        svgEl.style.height = vb.height + 'px';
+      }
     }
-    applyTransform();
+    fitToView();
   }
 
   /* ---- pinch / pan ---- */
@@ -300,14 +324,7 @@
   wrap.addEventListener('pointerup', e=>{
     const now = Date.now();
     if(now - lastTap < 280 && pointers.size === 0){
-      scale = 1; tx = 0; ty = 0;
-      const svgEl = stage.querySelector('svg');
-      if(svgEl){
-        let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
-        let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
-        if(w && h){ tx = -w/2; ty = -h/2; }
-      }
-      applyTransform();
+      fitToView();
     }
     lastTap = now;
   });
@@ -315,16 +332,7 @@
   /* ---- zoom buttons ---- */
   document.getElementById('btnZoomIn').onclick = ()=>{ scale = Math.min(20, scale*1.3); applyTransform(); };
   document.getElementById('btnZoomOut').onclick = ()=>{ scale = Math.max(0.05, scale/1.3); applyTransform(); };
-  document.getElementById('btnReset').onclick = ()=>{
-    scale = 1; tx=0; ty=0;
-    const svgEl = stage.querySelector('svg');
-    if(svgEl){
-      let w = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width;
-      let h = svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.height;
-      if(w && h){ tx = -w/2; ty = -h/2; }
-    }
-    applyTransform();
-  };
+  document.getElementById('btnReset').onclick = fitToView;
 
   /* ---- background toggle ---- */
   document.querySelectorAll('.bgtoggle button').forEach(btn=>{
