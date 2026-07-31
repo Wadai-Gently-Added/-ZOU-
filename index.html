@@ -399,27 +399,47 @@
     applyTransform();
   }
 
+  function extractSvgElement(text){
+    if(!text || !text.trim()) return null;
+    // 1st try: strict XML parse (handles standalone SVG files, with/without xml prolog)
+    try{
+      const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+      if(!doc.querySelector('parsererror')){
+        const root = doc.documentElement;
+        if(root && root.tagName && root.tagName.toLowerCase() === 'svg') return root;
+      }
+    }catch(e){}
+    // 2nd try: parse as HTML fragment and look for an <svg> element inside
+    // (covers cases where extra text/markup surrounds the svg tag)
+    try{
+      const doc2 = new DOMParser().parseFromString(text, 'text/html');
+      const svgEl = doc2.querySelector('svg');
+      if(svgEl) return svgEl;
+    }catch(e){}
+    return null;
+  }
+
   function loadSVG(text, name){
-    if(!text || !text.trim().startsWith('<')){
-      alert('SVGとして読み込めなかったみゅ。中身を確認してね');
+    const svgSource = extractSvgElement(text);
+    if(!svgSource){
+      alert('SVGとして読み込めなかったみゅ。中身がSVGコードか確認してね（HTMLや他のテキストは読み込めないよ）');
       return;
     }
-    stage.innerHTML = text;
+    stage.innerHTML = '';
+    const svgEl = document.importNode(svgSource, true);
+    stage.appendChild(svgEl);
     stage.style.display = 'block';
     empty.style.display = 'none';
     currentName = name || null;
 
-    const svgEl = stage.querySelector('svg');
-    if(svgEl){
-      // never let the svg's own box clip content that sits outside it
-      svgEl.style.overflow = 'visible';
-      // if a viewBox exists, lock rendered size to it so 1 content
-      // unit = 1 css px, keeping our zoom/pan math accurate
-      const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
-      if(vb && vb.width && vb.height){
-        svgEl.style.width = vb.width + 'px';
-        svgEl.style.height = vb.height + 'px';
-      }
+    // never let the svg's own box clip content that sits outside it
+    svgEl.style.overflow = 'visible';
+    // if a viewBox exists, lock rendered size to it so 1 content
+    // unit = 1 css px, keeping our zoom/pan math accurate
+    const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+    if(vb && vb.width && vb.height){
+      svgEl.style.width = vb.width + 'px';
+      svgEl.style.height = vb.height + 'px';
     }
     fitToView();
   }
