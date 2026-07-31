@@ -43,6 +43,16 @@
   }
   .topbtn:active{ background:#262a31; }
   .topbtn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); }
+  .pillgroup{
+    display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;
+  }
+  .pillgroup button{
+    background:var(--panel); border:none; color:var(--accent);
+    font-size:12.5px; font-weight:600; padding:7px 10px;
+    border-right:1px solid var(--line);
+  }
+  .pillgroup button:last-child{ border-right:none; }
+  .pillgroup button:active{ background:#262a31; }
 
   /* ---------- viewer ---------- */
   #viewerWrap{
@@ -160,6 +170,13 @@
   .saved-item .del{
     background:none; border:none; color:#e0625c; font-size:12px; padding:6px 8px;
   }
+  .saved-item .pin{
+    background:none; border:none; font-size:15px; padding:6px 6px;
+  }
+  .saved-item.current{
+    background:rgba(94,201,181,.1); border-radius:8px; margin:0 -6px; padding:0 6px;
+  }
+  .saved-item.current .name{ color:var(--accent); }
   #savedEmpty{ color:var(--sub); font-size:13px; text-align:center; padding:24px 0; }
   .subhead{ font-size:11.5px; color:var(--sub); margin:2px 0 6px; font-weight:600; letter-spacing:.03em; }
   .small-empty{ color:var(--sub); font-size:12.5px; text-align:center; padding:14px 0; }
@@ -174,8 +191,10 @@
     <h1>SVG VIEWER</h1>
     <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
       <button id="codeBtn" class="topbtn">🖊 コード</button>
-      <button id="btnSave" class="topbtn">＋ 登録</button>
-      <button id="listBtn" class="topbtn">📂 マイSVG</button>
+      <div class="pillgroup">
+        <button id="listBtn">📂 マイSVG</button>
+        <button id="btnSave">＋ 登録</button>
+      </div>
     </div>
   </div>
 
@@ -233,7 +252,13 @@
 <!-- saved list sheet -->
 <div class="sheet-backdrop" id="listBackdrop"></div>
 <div class="sheet" id="listSheet" style="max-height:70vh">
-  <h2>保存済みSVG</h2>
+  <h2 style="display:flex; align-items:center; justify-content:space-between;">
+    マイSVG
+    <span style="display:flex; gap:6px;">
+      <button id="listPrev" class="topbtn" style="padding:4px 12px;">‹</button>
+      <button id="listNext" class="topbtn" style="padding:4px 12px;">›</button>
+    </span>
+  </h2>
   <div id="savedList"></div>
   <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
   <div class="sheet-close" id="listCancel">閉じる</div>
@@ -252,9 +277,10 @@
 
 <!-- print sheet -->
 <div class="sheet-backdrop" id="printBackdrop"></div>
-<div class="sheet" id="printSheet" style="max-height:88vh">
+<div class="sheet" id="printSheet" style="max-height:92vh">
   <h2>印刷プレビュー（2ページ構成）</h2>
-  <div id="printArea" style="background:#fff; border-radius:10px; overflow:auto; max-height:60vh; padding:4px;">
+  <div class="print-hint">画面ではスクロールで確認できます。実際の印刷/PDFは全ページぶん出力されるよ</div>
+  <div id="printArea" style="background:#fff; border-radius:10px; overflow:auto; max-height:74vh; padding:4px;">
 
     <div class="print-page">
       <div class="print-title">SVG Viewer プレビュー</div>
@@ -265,8 +291,8 @@
         <tr><td>サイズ</td><td id="pSize">-</td></tr>
         <tr><td>ViewBox</td><td id="pViewBox">-</td></tr>
       </table>
-      <div class="print-note-label">備考・メモ欄</div>
-      <div class="print-note-box"></div>
+      <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
+      <div id="printNotes" class="print-note-box" contenteditable="true"></div>
     </div>
 
     <div class="print-page">
@@ -299,7 +325,9 @@
   .print-table td{ border:1px solid #ddd; padding:4px 8px; }
   .print-table td:first-child{ color:#666; width:35%; }
   .print-note-label{ font-size:11px; color:#666; margin-top:14px; }
-  .print-note-box{ border:1px solid #ddd; height:60px; margin-top:4px; }
+  .print-note-box{ border:1px solid #ddd; min-height:60px; margin-top:4px; padding:6px 8px; font-size:12px; color:#111; outline:none; }
+  .print-note-box:empty:before{ content:'ここに書き込めるよ(印刷にも反映されます)'; color:#aaa; }
+  .print-hint{ font-size:11.5px; color:var(--sub); margin:-4px 0 10px; line-height:1.5; }
   .print-code{
     font-family:ui-monospace,Menlo,monospace; font-size:10px; line-height:1.5;
     white-space:pre-wrap; word-break:break-all; background:#fafafa;
@@ -509,10 +537,23 @@
   document.getElementById('btnSave').onclick = ()=>{
     const svgEl = stage.querySelector('svg');
     if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
-    const name = prompt('保存名を入れてね', currentName || 'SVG ' + new Date().toLocaleString('ja-JP'));
-    if(name === null) return;
     const arr = getSaved();
-    arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString() });
+    let suggested = currentName || ('SVG ' + new Date().toLocaleString('ja-JP'));
+    const base = suggested.replace(/\s*\(\d+\)\s*$/, '');
+    const existingNums = arr
+      .map(it => it.name)
+      .filter(n => n === base || new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*\\(\\d+\\)$').test(n))
+      .map(n => {
+        const m = n.match(/\((\d+)\)$/);
+        return m ? parseInt(m[1], 10) : 1;
+      });
+    if(existingNums.length){
+      const next = Math.max(...existingNums) + 1;
+      suggested = base + '(' + next + ')';
+    }
+    const name = prompt('保存名を入れてね', suggested);
+    if(name === null) return;
+    arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false });
     setSaved(arr.slice(0, 100));
     alert('保存したみゅ！');
   };
@@ -604,6 +645,7 @@
     document.getElementById('pSize').textContent = sizeText;
     document.getElementById('pViewBox').textContent = vbText;
     document.getElementById('pStats').textContent = `${lines}行 / ${chars}文字`;
+    document.getElementById('printNotes').textContent = '';
 
     printSheet.classList.add('open'); printBackdrop.classList.add('open');
   };
@@ -637,39 +679,70 @@
 
   const listSheet = document.getElementById('listSheet');
   const listBackdrop = document.getElementById('listBackdrop');
-  function renderList(){
+
+  function getOrderedSaved(){
     const arr = getSaved();
+    return arr.map((item,i)=>({item,i})).sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
+  }
+
+  function renderList(){
+    const order = getOrderedSaved();
     const listEl = document.getElementById('savedList');
     const emptyEl = document.getElementById('savedEmpty');
     listEl.innerHTML = '';
-    if(arr.length === 0){ emptyEl.style.display='block'; return; }
+    if(order.length === 0){ emptyEl.style.display='block'; return; }
     emptyEl.style.display='none';
-    arr.forEach((item, idx)=>{
+    const currentContent = stage.querySelector('svg') ? stage.innerHTML : null;
+
+    order.forEach(({item, i})=>{
       const row = document.createElement('div');
-      row.className = 'saved-item';
+      row.className = 'saved-item' + (currentContent && item.content === currentContent ? ' current' : '');
       const d = new Date(item.savedAt);
       row.innerHTML = `
         <div class="thumb">${item.content}</div>
         <div class="meta">
-          <div class="name">${item.name}</div>
+          <div class="name">${item.pinned ? '📌 ' : ''}${item.name}</div>
           <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <button class="del" data-idx="${idx}">削除</button>
+        <button class="pin" data-idx="${i}" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
+        <button class="del" data-idx="${i}">削除</button>
       `;
       row.querySelector('.thumb').addEventListener('click', ()=>{
         loadSVG(item.content, item.name);
-        closeList();
+        renderList();
+      });
+      row.querySelector('.pin').addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        const cur = getSaved();
+        cur[i].pinned = !cur[i].pinned;
+        setSaved(cur);
+        renderList();
       });
       row.querySelector('.del').addEventListener('click', (ev)=>{
         ev.stopPropagation();
         const cur = getSaved();
-        cur.splice(idx,1);
+        cur.splice(i,1);
         setSaved(cur);
         renderList();
       });
       listEl.appendChild(row);
     });
   }
+
+  function navigateSaved(dir){
+    const order = getOrderedSaved();
+    if(order.length === 0) return;
+    const currentContent = stage.querySelector('svg') ? stage.innerHTML : null;
+    let idx = order.findIndex(o => o.item.content === currentContent);
+    if(idx === -1) idx = dir > 0 ? -1 : 0;
+    idx = (idx + dir + order.length) % order.length;
+    const it = order[idx].item;
+    loadSVG(it.content, it.name);
+    renderList();
+  }
+  document.getElementById('listPrev').onclick = ()=> navigateSaved(-1);
+  document.getElementById('listNext').onclick = ()=> navigateSaved(1);
+
   function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
   function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
   document.getElementById('listBtn').onclick = openList;
