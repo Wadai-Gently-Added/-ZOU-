@@ -96,6 +96,17 @@
   body.focus-mode #topbar, body.focus-mode #bottombar{ display:none; }
   body.focus-mode #exitFocusBtn{ display:flex; }
 
+  .nav-arrow{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:38px; height:38px; border-radius:19px; z-index:6;
+    background:rgba(28,31,36,.55); color:#fff; border:none;
+    font-size:18px; display:none; align-items:center; justify-content:center;
+  }
+  .nav-arrow.left{ left:8px; }
+  .nav-arrow.right{ right:8px; }
+  .nav-arrow.show{ display:flex; }
+  .nav-arrow:active{ background:rgba(28,31,36,.8); }
+
   .btn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); font-weight:700; }
 
   /* ---------- bottom controls ---------- */
@@ -204,6 +215,8 @@
       <div>下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
     </div>
     <div id="stage" style="display:none"></div>
+    <button id="navPrev" class="nav-arrow left" title="前のマイSVG">‹</button>
+    <button id="navNext" class="nav-arrow right" title="次のマイSVG">›</button>
   </div>
 
   <button id="exitFocusBtn">⤢</button>
@@ -252,13 +265,7 @@
 <!-- saved list sheet -->
 <div class="sheet-backdrop" id="listBackdrop"></div>
 <div class="sheet" id="listSheet" style="max-height:70vh">
-  <h2 style="display:flex; align-items:center; justify-content:space-between;">
-    マイSVG
-    <span style="display:flex; gap:6px;">
-      <button id="listPrev" class="topbtn" style="padding:4px 12px;">‹</button>
-      <button id="listNext" class="topbtn" style="padding:4px 12px;">›</button>
-    </span>
-  </h2>
+  <h2>マイSVG</h2>
   <div id="savedList"></div>
   <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
   <div class="sheet-close" id="listCancel">閉じる</div>
@@ -343,9 +350,15 @@
       position:absolute; left:0; top:0; width:100%; max-height:none;
       transform:none; border:none; background:#fff !important; padding:0;
     }
-    #printSheet .sheet-close, #printSheet #btnDoPrint, #printSheet h2{ display:none; }
+    #printSheet .sheet-close, #printSheet #btnDoPrint, #printSheet h2, .print-hint{ display:none; }
     #printArea{ max-height:none; overflow:visible; padding:0; background:#fff !important; }
-    .print-page{ border:none; page-break-after:always; padding:14mm; background:#fff !important; }
+    .print-page{ border:none; padding:14mm; background:#fff !important; page-break-inside:avoid; }
+  }
+  /* PC(横幅ある画面)だけプレビュー/コードを別ページに分割。
+     スマホのスタンドアロン印刷はpage-breakがほぼ無視されるので
+     そちらは縦に繋がった1ページのままにする */
+  @media print and (min-width: 768px){
+    .print-page{ page-break-after:always; }
     .print-page:last-child{ page-break-after:auto; }
   }
 </style>
@@ -555,6 +568,7 @@
     if(name === null) return;
     arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false });
     setSaved(arr.slice(0, 100));
+    updateNavArrows();
     alert('保存したみゅ！');
   };
 
@@ -647,6 +661,11 @@
     document.getElementById('pStats').textContent = `${lines}行 / ${chars}文字`;
     document.getElementById('printNotes').textContent = '';
 
+    // 印刷前スクロール位置がそのままキャプチャされるiOSスタンドアロン印刷対策
+    const area = document.getElementById('printArea');
+    if(area) area.scrollTop = 0;
+    window.scrollTo(0, 0);
+
     printSheet.classList.add('open'); printBackdrop.classList.add('open');
   };
   document.getElementById('printCancel').onclick = ()=>{
@@ -655,7 +674,12 @@
   printBackdrop.onclick = ()=>{
     printSheet.classList.remove('open'); printBackdrop.classList.remove('open');
   };
-  document.getElementById('btnDoPrint').onclick = ()=> window.print();
+  document.getElementById('btnDoPrint').onclick = ()=>{
+    const area = document.getElementById('printArea');
+    if(area) area.scrollTop = 0;
+    window.scrollTo(0, 0);
+    setTimeout(()=> window.print(), 50);
+  };
 
   /* ---- code edit sheet ---- */
   const codeSheet = document.getElementById('codeSheet');
@@ -724,6 +748,7 @@
         cur.splice(i,1);
         setSaved(cur);
         renderList();
+        updateNavArrows();
       });
       listEl.appendChild(row);
     });
@@ -739,9 +764,16 @@
     const it = order[idx].item;
     loadSVG(it.content, it.name);
     renderList();
+    updateNavArrows();
   }
-  document.getElementById('listPrev').onclick = ()=> navigateSaved(-1);
-  document.getElementById('listNext').onclick = ()=> navigateSaved(1);
+  function updateNavArrows(){
+    const has = getSaved().length > 1;
+    document.getElementById('navPrev').classList.toggle('show', has);
+    document.getElementById('navNext').classList.toggle('show', has);
+  }
+  document.getElementById('navPrev').onclick = ()=> navigateSaved(-1);
+  document.getElementById('navNext').onclick = ()=> navigateSaved(1);
+  updateNavArrows();
 
   function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
   function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
