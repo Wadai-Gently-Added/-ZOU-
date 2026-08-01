@@ -203,6 +203,12 @@
   .group-header .group-toggle{
     background:none; border:none; color:var(--sub); font-size:11px; padding:2px 4px;
   }
+  .group-header .group-handle{
+    color:var(--sub); font-size:14px; padding:2px 4px; cursor:grab; touch-action:none;
+  }
+  .group-header.dragging-group{
+    background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:6px; opacity:.95;
+  }
   .group-header .group-name{ font-size:12.5px; font-weight:700; flex:1; padding-left:4px; }
   .group-header .group-rename, .group-header .group-del{
     background:none; border:none; font-size:13px; padding:4px 5px; color:var(--sub);
@@ -414,6 +420,7 @@
 
   let scale = 1, tx = 0, ty = 0;
   let currentName = null;
+  let suppressClickUntil = 0;
 
   function applyTransform(){
     stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
@@ -775,6 +782,61 @@
     renderList();
   }
 
+  function attachGroupDrag(header){
+    const handle = header.querySelector('.group-handle');
+    handle.addEventListener('pointerdown', (e)=>{
+      e.preventDefault();
+      const listEl = document.getElementById('savedList');
+      let startY = e.clientY;
+      header.classList.add('dragging-group');
+      header.style.zIndex = 6;
+
+      function onMove(ev){
+        const dy = ev.clientY - startY;
+        header.style.transform = `translateY(${dy}px)`;
+        const headers = Array.from(listEl.querySelectorAll('.group-header')).filter(h => h.dataset.groupId);
+        const idx = headers.indexOf(header);
+        const rect = header.getBoundingClientRect();
+        const centerY = rect.top + rect.height/2;
+        for(let k=0;k<headers.length;k++){
+          if(headers[k] === header) continue;
+          const r2 = headers[k].getBoundingClientRect();
+          const otherCenter = r2.top + r2.height/2;
+          if(k < idx && centerY < otherCenter){
+            listEl.insertBefore(header, headers[k]);
+            startY = ev.clientY;
+            header.style.transform = 'translateY(0px)';
+            break;
+          }
+          if(k > idx && centerY > otherCenter){
+            listEl.insertBefore(header, headers[k].nextSibling);
+            startY = ev.clientY;
+            header.style.transform = 'translateY(0px)';
+            break;
+          }
+        }
+      }
+      function onUp(){
+        header.classList.remove('dragging-group');
+        header.style.transform = '';
+        header.style.zIndex = '';
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        const orderedIds = Array.from(listEl.querySelectorAll('.group-header'))
+          .filter(h => h.dataset.groupId)
+          .map(h => h.dataset.groupId);
+        const groups = getGroups();
+        const byId = {};
+        groups.forEach(g => byId[g.id] = g);
+        const newGroups = orderedIds.map(id => byId[id]).filter(Boolean);
+        setGroups(newGroups);
+        renderList();
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+  }
+
   function attachDrag(row){
     const handle = row.querySelector('.handle');
     handle.addEventListener('pointerdown', (e)=>{
@@ -899,6 +961,7 @@
       <button class="del">削除</button>
     `;
     row.querySelector('.thumb').addEventListener('click', ()=>{
+      if(Date.now() < suppressClickUntil) return;
       loadSVG(item.content, item.name);
       renderList();
     });
@@ -911,8 +974,22 @@
     });
     row.addEventListener('contextmenu', (ev)=>{
       ev.preventDefault();
+      suppressClickUntil = Date.now() + 500;
       const allGroups = getGroups();
       const opts = [];
+      opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
+        const name = prompt('グループ名を入れてね', '新しいグループ');
+        if(!name || !name.trim()) return;
+        const groups = getGroups();
+        const color = GROUP_COLORS[groups.length % GROUP_COLORS.length];
+        const newGroup = { id: 'g' + Date.now(), name: name.trim(), color, collapsed:false };
+        groups.push(newGroup);
+        setGroups(groups);
+        const cur = getSaved();
+        cur[i].group = newGroup.id;
+        setSaved(cur);
+        renderList();
+      }});
       allGroups.forEach(g=>{
         if((item.group||null) !== g.id){
           opts.push({ label: `📁 ${g.name} へ移動`, onClick: ()=>{
@@ -924,9 +1001,6 @@
         opts.push({ label: '🚫 グループ解除', onClick: ()=>{
           const cur = getSaved(); cur[i].group = null; setSaved(cur); renderList();
         }});
-      }
-      if(opts.length === 0){
-        opts.push({ label: 'グループがまだ無いみゅ', onClick: ()=>{} });
       }
       showContextMenu(ev.clientX, ev.clientY, opts);
     });
@@ -975,12 +1049,14 @@
       header.dataset.groupId = g.id;
       header.style.borderLeftColor = g.color;
       header.innerHTML = `
+        <span class="group-handle" title="ドラッグでグループ並べ替え">⠿</span>
         <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
         <span class="group-name">${g.name}</span>
         <button class="group-rename" title="名前変更">✏️</button>
         <button class="group-del" title="グループ削除">🗑</button>
       `;
       listEl.appendChild(header);
+      attachGroupDrag(header);
 
       const body = document.createElement('div');
       body.className = 'group-body';
