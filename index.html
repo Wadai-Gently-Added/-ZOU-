@@ -96,16 +96,7 @@
   body.focus-mode #topbar, body.focus-mode #bottombar{ display:none; }
   body.focus-mode #exitFocusBtn{ display:flex; }
 
-  .nav-arrow{
-    position:absolute; top:50%; transform:translateY(-50%);
-    width:38px; height:38px; border-radius:19px; z-index:6;
-    background:rgba(28,31,36,.55); color:#fff; border:none;
-    font-size:18px; display:none; align-items:center; justify-content:center;
-  }
-  .nav-arrow.left{ left:8px; }
-  .nav-arrow.right{ right:8px; }
-  .nav-arrow.show{ display:flex; }
-  .nav-arrow:active{ background:rgba(28,31,36,.8); }
+  
 
   .btn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); font-weight:700; }
 
@@ -184,6 +175,14 @@
   .saved-item .pin{
     background:none; border:none; font-size:15px; padding:6px 6px;
   }
+  .saved-item .handle{
+    color:var(--sub); font-size:16px; padding:6px 4px; cursor:grab;
+    touch-action:none; flex-shrink:0;
+  }
+  .saved-item.dragging{
+    background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4);
+    border-radius:8px; opacity:.95;
+  }
   .saved-item.current{
     background:rgba(94,201,181,.1); border-radius:8px; margin:0 -6px; padding:0 6px;
   }
@@ -215,8 +214,6 @@
       <div>下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
     </div>
     <div id="stage" style="display:none"></div>
-    <button id="navPrev" class="nav-arrow left" title="前のマイSVG">‹</button>
-    <button id="navNext" class="nav-arrow right" title="次のマイSVG">›</button>
   </div>
 
   <button id="exitFocusBtn">⤢</button>
@@ -588,7 +585,6 @@
     if(name === null) return;
     arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false });
     setSaved(arr.slice(0, 100));
-    updateNavArrows();
     alert('保存したみゅ！');
   };
 
@@ -725,8 +721,64 @@
   const listBackdrop = document.getElementById('listBackdrop');
 
   function getOrderedSaved(){
+    // 並び順はドラッグ操作だけで決まる(自動ソートはしない)
+    return getSaved().map((item,i)=>({item,i}));
+  }
+
+  function commitOrder(){
+    const listEl = document.getElementById('savedList');
+    const rows = Array.from(listEl.children);
     const arr = getSaved();
-    return arr.map((item,i)=>({item,i})).sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
+    const newArr = rows.map(r => arr[parseInt(r.dataset.origIdx,10)]);
+    setSaved(newArr);
+    renderList();
+  }
+
+  function attachDrag(row){
+    const handle = row.querySelector('.handle');
+    handle.addEventListener('pointerdown', (e)=>{
+      e.preventDefault();
+      const listEl = document.getElementById('savedList');
+      let startY = e.clientY;
+      row.classList.add('dragging');
+      row.style.zIndex = 5;
+
+      function onMove(ev){
+        const dy = ev.clientY - startY;
+        row.style.transform = `translateY(${dy}px)`;
+        const rows = Array.from(listEl.children);
+        const idx = rows.indexOf(row);
+        const rowRect = row.getBoundingClientRect();
+        const centerY = rowRect.top + rowRect.height/2;
+        for(let k=0;k<rows.length;k++){
+          if(rows[k] === row) continue;
+          const r2 = rows[k].getBoundingClientRect();
+          const otherCenter = r2.top + r2.height/2;
+          if(k < idx && centerY < otherCenter){
+            listEl.insertBefore(row, rows[k]);
+            startY = ev.clientY;
+            row.style.transform = 'translateY(0px)';
+            break;
+          }
+          if(k > idx && centerY > otherCenter){
+            listEl.insertBefore(row, rows[k].nextSibling);
+            startY = ev.clientY;
+            row.style.transform = 'translateY(0px)';
+            break;
+          }
+        }
+      }
+      function onUp(){
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        row.style.zIndex = '';
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        commitOrder();
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
   }
 
   function renderList(){
@@ -741,14 +793,16 @@
     order.forEach(({item, i})=>{
       const row = document.createElement('div');
       row.className = 'saved-item' + (currentContent && item.content === currentContent ? ' current' : '');
+      row.dataset.origIdx = i;
       const d = new Date(item.savedAt);
       row.innerHTML = `
+        <span class="handle" title="ドラッグで並べ替え">⠿</span>
         <div class="thumb">${item.content}</div>
         <div class="meta">
           <div class="name">${item.pinned ? '📌 ' : ''}${item.name}</div>
           <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <button class="pin" data-idx="${i}" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
+        <button class="pin" data-idx="${i}" title="ピン印をつける">${item.pinned ? '📌' : '📍'}</button>
         <button class="del" data-idx="${i}">削除</button>
       `;
       row.querySelector('.thumb').addEventListener('click', ()=>{
@@ -768,32 +822,11 @@
         cur.splice(i,1);
         setSaved(cur);
         renderList();
-        updateNavArrows();
       });
+      attachDrag(row);
       listEl.appendChild(row);
     });
   }
-
-  function navigateSaved(dir){
-    const order = getOrderedSaved();
-    if(order.length === 0) return;
-    const currentContent = stage.querySelector('svg') ? stage.innerHTML : null;
-    let idx = order.findIndex(o => o.item.content === currentContent);
-    if(idx === -1) idx = dir > 0 ? -1 : 0;
-    idx = (idx + dir + order.length) % order.length;
-    const it = order[idx].item;
-    loadSVG(it.content, it.name);
-    renderList();
-    updateNavArrows();
-  }
-  function updateNavArrows(){
-    const has = getSaved().length > 1;
-    document.getElementById('navPrev').classList.toggle('show', has);
-    document.getElementById('navNext').classList.toggle('show', has);
-  }
-  document.getElementById('navPrev').onclick = ()=> navigateSaved(-1);
-  document.getElementById('navNext').onclick = ()=> navigateSaved(1);
-  updateNavArrows();
 
   function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
   function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
