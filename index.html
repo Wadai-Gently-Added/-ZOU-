@@ -157,8 +157,9 @@
   /* ---------- saved list sheet ---------- */
   #savedList{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .saved-item{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:8px;
     padding:10px 4px; border-bottom:1px solid var(--line);
+    min-width:0; max-width:100%; box-sizing:border-box;
   }
   .saved-item .thumb{
     width:44px; height:44px; border-radius:8px; background:#101215;
@@ -235,7 +236,7 @@
   }
   .group-select{
     background:var(--panel); color:var(--sub); border:1px solid var(--line);
-    border-radius:6px; font-size:10px; max-width:64px; padding:3px 2px; flex-shrink:0;
+    border-radius:6px; font-size:10px; max-width:52px; padding:3px 1px; flex-shrink:0;
   }
   .saved-item.dragging{
     background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
@@ -245,10 +246,6 @@
     background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4);
     border-radius:8px; opacity:.95;
   }
-  .saved-item.current{
-    background:rgba(94,201,181,.1); border-radius:8px; margin:0 -6px; padding:0 6px;
-  }
-  .saved-item.current .name{ color:var(--accent); }
   #savedEmpty{ color:var(--sub); font-size:13px; text-align:center; padding:24px 0; }
   .subhead{ font-size:11.5px; color:var(--sub); margin:2px 0 6px; font-weight:600; letter-spacing:.03em; }
   .small-empty{ color:var(--sub); font-size:12.5px; text-align:center; padding:14px 0; }
@@ -328,7 +325,7 @@
     マイSVG
     <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;">＋ グループ</button>
   </h2>
-  <div id="savedList" style="overflow-y:auto;"></div>
+  <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
   <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
   <div class="sheet-close" id="listCancel">閉じる</div>
 </div>
@@ -1075,9 +1072,9 @@
     document.body.appendChild(backdrop);
   }
 
-  function buildItemRow(item, i, groups, currentContent, isTopLevel){
+  function buildItemRow(item, i, groups, isTopLevel){
     const row = document.createElement('div');
-    row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (currentContent && item.content === currentContent ? ' current' : '');
+    row.className = 'saved-item' + (item.pinned ? ' pinned' : '');
     row.dataset.origIdx = i;
     row.dataset.itemId = item.id;
     row.dataset.group = item.group || '';
@@ -1096,7 +1093,7 @@
       </div>
       <select class="group-select">${options.join('')}</select>
       <button class="pin" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
-      <button class="del">削除</button>
+      <button class="del" title="削除">🗑</button>
     `;
     row.querySelector('.thumb').addEventListener('click', ()=>{
       if(Date.now() < suppressClickUntil) return;
@@ -1116,6 +1113,15 @@
       suppressClickUntil = Date.now() + 500;
       const allGroups = getGroups();
       const opts = [];
+      opts.push({ label: '✏️ 名前を変更', onClick: ()=>{
+        const newName = prompt('名前を変更', item.name);
+        if(newName === null || !newName.trim()) return;
+        const cur = getSaved();
+        const it = cur.find(x=>x.id===item.id);
+        if(it) it.name = newName.trim();
+        setSaved(cur);
+        renderList();
+      }});
       opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
         const name = prompt('グループ名を入れてね', '新しいグループ');
         if(!name || !name.trim()) return;
@@ -1171,7 +1177,6 @@
     listEl.innerHTML = '';
     if(items.length === 0){ emptyEl.style.display='block'; return; }
     emptyEl.style.display='none';
-    const currentContent = stage.querySelector('svg') ? stage.innerHTML : null;
     const order = reconcileTopOrder(items, groups);
 
     order.forEach(entry=>{
@@ -1209,7 +1214,7 @@
           .filter(o => (o.item.group||null) === g.id)
           .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
         itemsWithIdx.forEach(({item,i})=>{
-          body.appendChild(buildItemRow(item, i, groups, currentContent, false));
+          body.appendChild(buildItemRow(item, i, groups, false));
         });
 
         header.querySelector('.group-toggle').onclick = ()=>{
@@ -1242,7 +1247,7 @@
         block.className = 'toplevel-block item-block';
         block.dataset.entryType = 'item';
         block.dataset.entryId = item.id;
-        block.appendChild(buildItemRow(item, idx, groups, currentContent, true));
+        block.appendChild(buildItemRow(item, idx, groups, true));
         if(!item.pinned) attachTopLevelDrag(block);
         listEl.appendChild(block);
       }
