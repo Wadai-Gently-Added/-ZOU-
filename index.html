@@ -206,6 +206,23 @@
     padding:9px 10px; font-size:12.5px; border-radius:6px;
   }
   .ctx-menu button:active{ background:#262a31; }
+  .color-pick-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .color-pick-panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; width:240px;
+  }
+  .color-pick-title{ font-size:13px; color:var(--text); margin-bottom:14px; text-align:center; }
+  .color-swatch-wrap{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:14px; }
+  .color-swatch{
+    width:38px; height:38px; border-radius:19px; border:2px solid rgba(255,255,255,.15);
+  }
+  .color-swatch:active{ transform:scale(.9); }
+  .color-pick-cancel{
+    width:100%; background:none; border:none; color:var(--sub); font-size:13px; padding:8px;
+  }
   .group-header .group-toggle{
     background:none; border:none; color:var(--sub); font-size:11px; padding:2px 4px;
   }
@@ -416,7 +433,7 @@
   const STORE_KEY = 'svgViewerSavedItems';
   const GROUPS_KEY = 'svgViewerGroups';
   const TOPORDER_KEY = 'svgViewerTopOrder';
-  const GROUP_COLORS = ['#5ec9b5','#e0625c','#e0b85c','#7ea6e0','#b57ee0','#e07eb8'];
+  const GROUP_COLORS = ['#e0625c','#e0b85c','#7ea6e0','#b57ee0','#e07eb8','#8bd17e'];
   function getGroups(){
     try{ return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); }
     catch(e){ return []; }
@@ -1025,6 +1042,39 @@
     }, 0);
   }
 
+  function pickGroupColor(callback){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'color-pick-backdrop';
+    const panel = document.createElement('div');
+    panel.className = 'color-pick-panel';
+    const title = document.createElement('div');
+    title.className = 'color-pick-title';
+    title.textContent = 'グループの色を選んでね';
+    panel.appendChild(title);
+    const swatchWrap = document.createElement('div');
+    swatchWrap.className = 'color-swatch-wrap';
+    GROUP_COLORS.forEach(c=>{
+      const sw = document.createElement('button');
+      sw.className = 'color-swatch';
+      sw.style.background = c;
+      sw.onclick = (e)=>{
+        e.stopPropagation();
+        document.body.removeChild(backdrop);
+        callback(c);
+      };
+      swatchWrap.appendChild(sw);
+    });
+    panel.appendChild(swatchWrap);
+    const cancel = document.createElement('button');
+    cancel.className = 'color-pick-cancel';
+    cancel.textContent = 'キャンセル';
+    cancel.onclick = ()=> document.body.removeChild(backdrop);
+    panel.appendChild(cancel);
+    backdrop.appendChild(panel);
+    backdrop.onclick = (e)=>{ if(e.target === backdrop) document.body.removeChild(backdrop); };
+    document.body.appendChild(backdrop);
+  }
+
   function buildItemRow(item, i, groups, currentContent, isTopLevel){
     const row = document.createElement('div');
     row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (currentContent && item.content === currentContent ? ' current' : '');
@@ -1069,16 +1119,17 @@
       opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
         const name = prompt('グループ名を入れてね', '新しいグループ');
         if(!name || !name.trim()) return;
-        const groups = getGroups();
-        const color = GROUP_COLORS[groups.length % GROUP_COLORS.length];
-        const newGroup = { id: 'g' + Date.now(), name: name.trim(), color, collapsed:false };
-        groups.push(newGroup);
-        setGroups(groups);
-        const cur = getSaved();
-        const it = cur.find(x=>x.id===item.id);
-        if(it) it.group = newGroup.id;
-        setSaved(cur);
-        renderList();
+        pickGroupColor((color)=>{
+          const groups = getGroups();
+          const newGroup = { id: 'g' + Date.now(), name: name.trim(), color, collapsed:false };
+          groups.push(newGroup);
+          setGroups(groups);
+          const cur = getSaved();
+          const it = cur.find(x=>x.id===item.id);
+          if(it) it.group = newGroup.id;
+          setSaved(cur);
+          renderList();
+        });
       }});
       allGroups.forEach(g=>{
         if((item.group||null) !== g.id){
@@ -1201,11 +1252,12 @@
   document.getElementById('btnNewGroup').onclick = ()=>{
     const name = prompt('グループ名を入れてね', '新しいグループ');
     if(!name || !name.trim()) return;
-    const groups = getGroups();
-    const color = GROUP_COLORS[groups.length % GROUP_COLORS.length];
-    groups.push({ id: 'g' + Date.now(), name: name.trim(), color, collapsed:false });
-    setGroups(groups);
-    renderList();
+    pickGroupColor((color)=>{
+      const groups = getGroups();
+      groups.push({ id: 'g' + Date.now(), name: name.trim(), color, collapsed:false });
+      setGroups(groups);
+      renderList();
+    });
   };
 
   function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
