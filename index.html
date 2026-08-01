@@ -187,6 +187,19 @@
     border-left:4px solid var(--accent); margin-top:6px;
   }
   .group-header.ungrouped-header{ border-left-color:var(--line); }
+  .group-header.drop-target{
+    background:rgba(94,201,181,.18); outline:2px dashed var(--accent); outline-offset:-2px;
+  }
+  .ctx-menu{
+    position:fixed; z-index:50; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.5); padding:6px;
+    display:flex; flex-direction:column; min-width:170px;
+  }
+  .ctx-menu button{
+    background:none; border:none; color:var(--text); text-align:left;
+    padding:9px 10px; font-size:12.5px; border-radius:6px;
+  }
+  .ctx-menu button:active{ background:#262a31; }
   .group-header .group-toggle{
     background:none; border:none; color:var(--sub); font-size:11px; padding:2px 4px;
   }
@@ -767,13 +780,29 @@
     handle.addEventListener('pointerdown', (e)=>{
       e.preventDefault();
       const container = row.parentElement;
+      const listEl = document.getElementById('savedList');
       let startY = e.clientY;
       row.classList.add('dragging');
-      row.style.zIndex = 5;
+      row.style.zIndex = 6;
+      let hoverHeader = null;
 
       function onMove(ev){
         const dy = ev.clientY - startY;
         row.style.transform = `translateY(${dy}px)`;
+
+        // グループヘッダーの上まで来てたらそこにドロップできる状態にする
+        const headers = Array.from(listEl.querySelectorAll('.group-header'));
+        let matched = null;
+        for(const h of headers){
+          const r = h.getBoundingClientRect();
+          if(ev.clientY >= r.top - 6 && ev.clientY <= r.bottom + 6){ matched = h; break; }
+        }
+        if(hoverHeader && hoverHeader !== matched) hoverHeader.classList.remove('drop-target');
+        if(matched) matched.classList.add('drop-target');
+        hoverHeader = matched;
+
+        if(hoverHeader) return; // ヘッダーに乗ってる間は並べ替え計算はしない
+
         const rows = Array.from(container.children);
         const idx = rows.indexOf(row);
         const rowRect = row.getBoundingClientRect();
@@ -803,11 +832,48 @@
         row.style.zIndex = '';
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
+        if(hoverHeader){
+          hoverHeader.classList.remove('drop-target');
+          const groupId = hoverHeader.dataset.groupId || null;
+          const cur = getSaved();
+          const idx = parseInt(row.dataset.origIdx, 10);
+          cur[idx].group = groupId;
+          setSaved(cur);
+          renderList();
+          return;
+        }
         commitOrder(container);
       }
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
     });
+  }
+
+  function closeContextMenu(){
+    const el = document.getElementById('ctxMenu');
+    if(el) el.remove();
+  }
+  function showContextMenu(x, y, options){
+    closeContextMenu();
+    const menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    menu.id = 'ctxMenu';
+    options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.textContent = opt.label;
+      btn.onclick = (e)=>{ e.stopPropagation(); opt.onClick(); closeContextMenu(); };
+      menu.appendChild(btn);
+    });
+    document.body.appendChild(menu);
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    let left = x, top = y;
+    if(left + mw > window.innerWidth) left = window.innerWidth - mw - 8;
+    if(top + mh > window.innerHeight) top = window.innerHeight - mh - 8;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    setTimeout(()=>{
+      document.addEventListener('click', closeContextMenu, { once:true });
+    }, 0);
   }
 
   function buildItemRow(item, i, groups, currentContent){
@@ -842,6 +908,27 @@
       cur[i].group = ev.target.value || null;
       setSaved(cur);
       renderList();
+    });
+    row.addEventListener('contextmenu', (ev)=>{
+      ev.preventDefault();
+      const allGroups = getGroups();
+      const opts = [];
+      allGroups.forEach(g=>{
+        if((item.group||null) !== g.id){
+          opts.push({ label: `📁 ${g.name} へ移動`, onClick: ()=>{
+            const cur = getSaved(); cur[i].group = g.id; setSaved(cur); renderList();
+          }});
+        }
+      });
+      if(item.group){
+        opts.push({ label: '🚫 グループ解除', onClick: ()=>{
+          const cur = getSaved(); cur[i].group = null; setSaved(cur); renderList();
+        }});
+      }
+      if(opts.length === 0){
+        opts.push({ label: 'グループがまだ無いみゅ', onClick: ()=>{} });
+      }
+      showContextMenu(ev.clientX, ev.clientY, opts);
     });
     row.querySelector('.pin').addEventListener('click', (ev)=>{
       ev.stopPropagation();
@@ -885,6 +972,7 @@
     groups.forEach(g=>{
       const header = document.createElement('div');
       header.className = 'group-header';
+      header.dataset.groupId = g.id;
       header.style.borderLeftColor = g.color;
       header.innerHTML = `
         <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
@@ -923,6 +1011,7 @@
     if(groups.length){
       const header = document.createElement('div');
       header.className = 'group-header ungrouped-header';
+      header.dataset.groupId = '';
       header.innerHTML = `<span class="group-name">グループなし</span>`;
       listEl.appendChild(header);
     }
