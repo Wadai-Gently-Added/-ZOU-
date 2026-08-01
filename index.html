@@ -186,13 +186,15 @@
   .toplevel-block.dragging-block{
     background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
   }
+  .group-block{
+    border-left:4px solid var(--accent); border-radius:6px; padding:2px 0 4px 4px;
+  }
   .group-block.drop-target{
-    background:rgba(94,201,181,.18); outline:2px dashed var(--accent); outline-offset:-2px; border-radius:8px;
+    outline:2px dashed var(--accent); outline-offset:-2px; border-radius:8px;
   }
 
   .group-header{
     display:flex; align-items:center; gap:6px; padding:8px 4px 6px;
-    border-left:4px solid var(--accent);
   }
   .ctx-menu{
     position:fixed; z-index:50; background:var(--panel); border:1px solid var(--line);
@@ -818,7 +820,9 @@
     const rows = Array.from(container.children);
     const arr = getSaved();
     const groupId = container.dataset.group || null;
-    const thisGroupNew = rows.map(r => arr[parseInt(r.dataset.origIdx,10)]);
+    const byId = {};
+    arr.forEach(it => byId[it.id] = it);
+    const thisGroupNew = rows.map(r => byId[r.dataset.itemId]).filter(Boolean);
     const others = arr.filter(it => (it.group||null) !== groupId);
     setSaved([...others, ...thisGroupNew]);
     renderList();
@@ -905,29 +909,35 @@
     handle.addEventListener('pointerdown', (e)=>{
       e.preventDefault();
       const container = row.parentElement;
+      const ownBlock = container.parentElement; // .group-block
+      const ownGroupId = container.dataset.group || null;
       const listEl = document.getElementById('savedList');
       let startY = e.clientY;
+      let lastY = e.clientY;
       row.classList.add('dragging');
       row.style.zIndex = 6;
-      let hoverHeader = null;
+      let hoverTarget = null;
 
       function onMove(ev){
+        lastY = ev.clientY;
         const dy = ev.clientY - startY;
         row.style.transform = `translateY(${dy}px)`;
 
-        // グループヘッダーの上まで来てたらそこにドロップできる状態にする
+        // 別のグループのヘッダーの上まで来てたらそこにドロップできる状態にする
+        // (自分が今いるグループの上に乗ってもハイライトしない=普通の並べ替え扱い)
         const headers = Array.from(listEl.querySelectorAll('.group-header'));
         let matchedHeader = null;
         for(const h of headers){
+          if(h.dataset.groupId === ownGroupId) continue;
           const r = h.getBoundingClientRect();
           if(ev.clientY >= r.top - 6 && ev.clientY <= r.bottom + 6){ matchedHeader = h; break; }
         }
         const matched = matchedHeader ? matchedHeader.closest('.group-block') : null;
-        if(hoverHeader && hoverHeader !== matched) hoverHeader.classList.remove('drop-target');
+        if(hoverTarget && hoverTarget !== matched) hoverTarget.classList.remove('drop-target');
         if(matched) matched.classList.add('drop-target');
-        hoverHeader = matched;
+        hoverTarget = matched;
 
-        if(hoverHeader) return; // ヘッダーに乗ってる間は並べ替え計算はしない
+        if(hoverTarget) return; // 別グループに乗ってる間は並べ替え計算はしない
 
         const rows = Array.from(container.children);
         const idx = rows.indexOf(row);
@@ -958,16 +968,29 @@
         row.style.zIndex = '';
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
-        if(hoverHeader){
-          hoverHeader.classList.remove('drop-target');
-          const groupId = hoverHeader.dataset.entryId || null;
+
+        if(hoverTarget){
+          hoverTarget.classList.remove('drop-target');
+          const groupId = hoverTarget.dataset.entryId || null;
           const cur = getSaved();
-          const idx = parseInt(row.dataset.origIdx, 10);
-          cur[idx].group = groupId;
+          const it = cur.find(x => x.id === row.dataset.itemId);
+          if(it) it.group = groupId;
           setSaved(cur);
           renderList();
           return;
         }
+
+        // 自分のグループブロックの外まで持ち出したらグループ解除
+        const ownRect = ownBlock.getBoundingClientRect();
+        if(lastY < ownRect.top - 4 || lastY > ownRect.bottom + 4){
+          const cur = getSaved();
+          const it = cur.find(x => x.id === row.dataset.itemId);
+          if(it) it.group = null;
+          setSaved(cur);
+          renderList();
+          return;
+        }
+
         commitOrder(container);
       }
       window.addEventListener('pointermove', onMove);
@@ -1006,6 +1029,7 @@
     const row = document.createElement('div');
     row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (currentContent && item.content === currentContent ? ' current' : '');
     row.dataset.origIdx = i;
+    row.dataset.itemId = item.id;
     row.dataset.group = item.group || '';
     const d = new Date(item.savedAt);
     const handleHtml = item.pinned
@@ -1032,7 +1056,8 @@
     row.querySelector('.group-select').addEventListener('click', ev=> ev.stopPropagation());
     row.querySelector('.group-select').addEventListener('change', (ev)=>{
       const cur = getSaved();
-      cur[i].group = ev.target.value || null;
+      const it = cur.find(x=>x.id===item.id);
+      if(it) it.group = ev.target.value || null;
       setSaved(cur);
       renderList();
     });
@@ -1050,20 +1075,21 @@
         groups.push(newGroup);
         setGroups(groups);
         const cur = getSaved();
-        cur[i].group = newGroup.id;
+        const it = cur.find(x=>x.id===item.id);
+        if(it) it.group = newGroup.id;
         setSaved(cur);
         renderList();
       }});
       allGroups.forEach(g=>{
         if((item.group||null) !== g.id){
           opts.push({ label: `📁 ${g.name} へ移動`, onClick: ()=>{
-            const cur = getSaved(); cur[i].group = g.id; setSaved(cur); renderList();
+            const cur = getSaved(); const it = cur.find(x=>x.id===item.id); if(it) it.group = g.id; setSaved(cur); renderList();
           }});
         }
       });
       if(item.group){
         opts.push({ label: '🚫 グループ解除', onClick: ()=>{
-          const cur = getSaved(); cur[i].group = null; setSaved(cur); renderList();
+          const cur = getSaved(); const it = cur.find(x=>x.id===item.id); if(it) it.group = null; setSaved(cur); renderList();
         }});
       }
       showContextMenu(ev.clientX, ev.clientY, opts);
@@ -1071,14 +1097,14 @@
     row.querySelector('.pin').addEventListener('click', (ev)=>{
       ev.stopPropagation();
       const cur = getSaved();
-      cur[i].pinned = !cur[i].pinned;
+      const it = cur.find(x=>x.id===item.id);
+      if(it) it.pinned = !it.pinned;
       setSaved(cur);
       renderList();
     });
     row.querySelector('.del').addEventListener('click', (ev)=>{
       ev.stopPropagation();
-      const cur = getSaved();
-      cur.splice(i,1);
+      const cur = getSaved().filter(x=>x.id!==item.id);
       setSaved(cur);
       renderList();
     });
@@ -1106,11 +1132,12 @@
         block.className = 'toplevel-block group-block';
         block.dataset.entryType = 'group';
         block.dataset.entryId = g.id;
+        block.style.borderLeftColor = g.color;
+        block.style.background = g.color + '14';
 
         const header = document.createElement('div');
         header.className = 'group-header';
         header.dataset.groupId = g.id;
-        header.style.borderLeftColor = g.color;
         header.innerHTML = `
           <span class="group-handle" title="ドラッグで並べ替え">⠿</span>
           <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
