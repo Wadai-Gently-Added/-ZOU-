@@ -179,6 +179,8 @@
     color:var(--sub); font-size:16px; padding:6px 4px; cursor:grab;
     touch-action:none; flex-shrink:0;
   }
+  .saved-item .handle.locked{ cursor:default; font-size:14px; }
+  .saved-item.pinned{ background:rgba(255,255,255,.03); }
   .saved-item.dragging{
     background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4);
     border-radius:8px; opacity:.95;
@@ -721,8 +723,8 @@
   const listBackdrop = document.getElementById('listBackdrop');
 
   function getOrderedSaved(){
-    // 並び順はドラッグ操作だけで決まる(自動ソートはしない)
-    return getSaved().map((item,i)=>({item,i}));
+    // ピン留めは常に先頭に固定、それ以外はドラッグ順を維持
+    return getSaved().map((item,i)=>({item,i})).sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
   }
 
   function commitOrder(){
@@ -752,6 +754,7 @@
         const centerY = rowRect.top + rowRect.height/2;
         for(let k=0;k<rows.length;k++){
           if(rows[k] === row) continue;
+          if(rows[k].classList.contains('pinned')) continue;
           const r2 = rows[k].getBoundingClientRect();
           const otherCenter = r2.top + r2.height/2;
           if(k < idx && centerY < otherCenter){
@@ -792,17 +795,20 @@
 
     order.forEach(({item, i})=>{
       const row = document.createElement('div');
-      row.className = 'saved-item' + (currentContent && item.content === currentContent ? ' current' : '');
+      row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (currentContent && item.content === currentContent ? ' current' : '');
       row.dataset.origIdx = i;
       const d = new Date(item.savedAt);
+      const handleHtml = item.pinned
+        ? '<span class="handle locked" title="ピン留め中は固定">📌</span>'
+        : '<span class="handle" title="ドラッグで並べ替え">⠿</span>';
       row.innerHTML = `
-        <span class="handle" title="ドラッグで並べ替え">⠿</span>
+        ${handleHtml}
         <div class="thumb">${item.content}</div>
         <div class="meta">
-          <div class="name">${item.pinned ? '📌 ' : ''}${item.name}</div>
+          <div class="name">${item.name}</div>
           <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <button class="pin" data-idx="${i}" title="ピン印をつける">${item.pinned ? '📌' : '📍'}</button>
+        <button class="pin" data-idx="${i}" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
         <button class="del" data-idx="${i}">削除</button>
       `;
       row.querySelector('.thumb').addEventListener('click', ()=>{
@@ -823,7 +829,7 @@
         setSaved(cur);
         renderList();
       });
-      attachDrag(row);
+      if(!item.pinned) attachDrag(row);
       listEl.appendChild(row);
     });
   }
