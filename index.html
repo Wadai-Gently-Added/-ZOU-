@@ -16,6 +16,11 @@
     --accent: #5ec9b5;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  *{ scrollbar-width:thin; scrollbar-color: #3a3f47 transparent; }
+  *::-webkit-scrollbar{ width:6px; height:6px; }
+  *::-webkit-scrollbar-track{ background:transparent; }
+  *::-webkit-scrollbar-thumb{ background:#3a3f47; border-radius:3px; }
+  *::-webkit-scrollbar-thumb:hover{ background:#4a4f58; }
   html,body{
     margin:0; padding:0; height:100%;
     background:var(--bg); color:var(--text);
@@ -1203,20 +1208,8 @@
         `;
         block.appendChild(header);
 
-        const body = document.createElement('div');
-        body.className = 'group-body';
-        body.dataset.group = g.id;
-        if(g.collapsed) body.style.display = 'none';
-        block.appendChild(body);
-
-        const itemsWithIdx = items
-          .map((item,i)=>({item,i}))
-          .filter(o => (o.item.group||null) === g.id)
-          .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
-        itemsWithIdx.forEach(({item,i})=>{
-          body.appendChild(buildItemRow(item, i, groups, false));
-        });
-
+        // ボタンの配線はアイテム描画より先にやる
+        // (アイテム側で何かエラーが起きても、ここは必ず動くように)
         header.querySelector('.group-toggle').onclick = ()=>{
           g.collapsed = !g.collapsed;
           setGroups(groups);
@@ -1234,6 +1227,24 @@
           setGroups(groups.filter(x=>x.id!==g.id));
           renderList();
         };
+
+        const body = document.createElement('div');
+        body.className = 'group-body';
+        body.dataset.group = g.id;
+        if(g.collapsed) body.style.display = 'none';
+        block.appendChild(body);
+
+        try{
+          const itemsWithIdx = items
+            .map((item,i)=>({item,i}))
+            .filter(o => (o.item.group||null) === g.id)
+            .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
+          itemsWithIdx.forEach(({item,i})=>{
+            body.appendChild(buildItemRow(item, i, groups, false));
+          });
+        }catch(err){
+          console.error('group item render failed', err);
+        }
 
         attachTopLevelDrag(block);
         listEl.appendChild(block);
