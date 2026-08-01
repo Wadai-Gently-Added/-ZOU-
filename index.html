@@ -182,13 +182,17 @@
   .saved-item .handle.locked{ cursor:default; font-size:14px; }
   .saved-item.pinned{ background:rgba(255,255,255,.03); }
 
+  .toplevel-block{ margin-top:6px; }
+  .toplevel-block.dragging-block{
+    background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
+  }
+  .group-block.drop-target{
+    background:rgba(94,201,181,.18); outline:2px dashed var(--accent); outline-offset:-2px; border-radius:8px;
+  }
+
   .group-header{
     display:flex; align-items:center; gap:6px; padding:8px 4px 6px;
-    border-left:4px solid var(--accent); margin-top:6px;
-  }
-  .group-header.ungrouped-header{ border-left-color:var(--line); }
-  .group-header.drop-target{
-    background:rgba(94,201,181,.18); outline:2px dashed var(--accent); outline-offset:-2px;
+    border-left:4px solid var(--accent);
   }
   .ctx-menu{
     position:fixed; z-index:50; background:var(--panel); border:1px solid var(--line);
@@ -206,9 +210,6 @@
   .group-header .group-handle{
     color:var(--sub); font-size:14px; padding:2px 4px; cursor:grab; touch-action:none;
   }
-  .group-header.dragging-group{
-    background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:6px; opacity:.95;
-  }
   .group-header .group-name{ font-size:12.5px; font-weight:700; flex:1; padding-left:4px; }
   .group-header .group-rename, .group-header .group-del{
     background:none; border:none; font-size:13px; padding:4px 5px; color:var(--sub);
@@ -217,6 +218,10 @@
     background:var(--panel); color:var(--sub); border:1px solid var(--line);
     border-radius:6px; font-size:10px; max-width:64px; padding:3px 2px; flex-shrink:0;
   }
+  .saved-item.dragging{
+    background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
+  }
+  .item-block .saved-item{ border-bottom:1px solid var(--line); }
   .saved-item.dragging{
     background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4);
     border-radius:8px; opacity:.95;
@@ -408,6 +413,7 @@
   const wrap = document.getElementById('viewerWrap');
   const STORE_KEY = 'svgViewerSavedItems';
   const GROUPS_KEY = 'svgViewerGroups';
+  const TOPORDER_KEY = 'svgViewerTopOrder';
   const GROUP_COLORS = ['#5ec9b5','#e0625c','#e0b85c','#7ea6e0','#b57ee0','#e07eb8'];
   function getGroups(){
     try{ return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); }
@@ -416,6 +422,35 @@
   function setGroups(arr){
     try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(arr)); }
     catch(e){}
+  }
+  function getTopOrder(){
+    try{ return JSON.parse(localStorage.getItem(TOPORDER_KEY) || '[]'); }
+    catch(e){ return []; }
+  }
+  function setTopOrder(arr){
+    try{ localStorage.setItem(TOPORDER_KEY, JSON.stringify(arr)); }
+    catch(e){}
+  }
+  // topOrder = グループ化タブ(グループ本体)とグループ化してない個別アイテムが
+  // 混ざって並ぶ「Edgeのタブバー」的な並び順。存在しなくなったもの/未登録のものを
+  // 自動で整合させる(手動で毎回同期しなくて済むように)
+  function reconcileTopOrder(items, groups){
+    let order = getTopOrder();
+    const groupIds = new Set(groups.map(g=>g.id));
+    const looseItemIds = new Set(items.filter(it=>!it.group).map(it=>it.id));
+    order = order.filter(e=>{
+      if(e.type === 'group') return groupIds.has(e.id);
+      if(e.type === 'item') return looseItemIds.has(e.id);
+      return false;
+    });
+    groups.forEach(g=>{
+      if(!order.some(e=>e.type==='group' && e.id===g.id)) order.push({type:'group', id:g.id});
+    });
+    items.forEach(it=>{
+      if(!it.group && !order.some(e=>e.type==='item' && e.id===it.id)) order.push({type:'item', id: it.id});
+    });
+    setTopOrder(order);
+    return order;
   }
 
   let scale = 1, tx = 0, ty = 0;
@@ -608,8 +643,15 @@
 
   /* ---- save / list ---- */
   function getSaved(){
-    try{ return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
-    catch(e){ return []; }
+    let arr;
+    try{ arr = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+    catch(e){ arr = []; }
+    let changed = false;
+    arr.forEach(it=>{
+      if(!it.id){ it.id = 's' + Date.now() + Math.random().toString(36).slice(2,7); changed = true; }
+    });
+    if(changed){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }catch(e){} }
+    return arr;
   }
   function setSaved(arr){
     try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
@@ -635,7 +677,7 @@
     }
     const name = prompt('保存名を入れてね', suggested);
     if(name === null) return;
-    arr.unshift({ name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false });
+    arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false, group:null });
     setSaved(arr.slice(0, 100));
     alert('保存したみゅ！');
   };
@@ -782,54 +824,75 @@
     renderList();
   }
 
-  function attachGroupDrag(header){
-    const handle = header.querySelector('.group-handle');
+  function attachTopLevelDrag(block){
+    const handle = block.querySelector('.group-handle') || block.querySelector('.handle');
+    if(!handle) return;
     handle.addEventListener('pointerdown', (e)=>{
       e.preventDefault();
       const listEl = document.getElementById('savedList');
       let startY = e.clientY;
-      header.classList.add('dragging-group');
-      header.style.zIndex = 6;
+      block.classList.add('dragging-block');
+      block.style.zIndex = 6;
+      const isGroupBlock = block.classList.contains('group-block');
+      let hoverGroupBlock = null;
 
       function onMove(ev){
         const dy = ev.clientY - startY;
-        header.style.transform = `translateY(${dy}px)`;
-        const headers = Array.from(listEl.querySelectorAll('.group-header')).filter(h => h.dataset.groupId);
-        const idx = headers.indexOf(header);
-        const rect = header.getBoundingClientRect();
+        block.style.transform = `translateY(${dy}px)`;
+
+        if(!isGroupBlock){
+          // 個別アイテムをグループの上まで持っていったらそこにポトンと入れられる
+          const groupBlocks = Array.from(listEl.querySelectorAll('.group-block'));
+          let matched = null;
+          for(const gb of groupBlocks){
+            const r = gb.getBoundingClientRect();
+            if(ev.clientY >= r.top && ev.clientY <= r.bottom){ matched = gb; break; }
+          }
+          if(hoverGroupBlock && hoverGroupBlock !== matched) hoverGroupBlock.classList.remove('drop-target');
+          if(matched) matched.classList.add('drop-target');
+          hoverGroupBlock = matched;
+          if(hoverGroupBlock) return;
+        }
+
+        const blocks = Array.from(listEl.children).filter(el => el.classList.contains('toplevel-block'));
+        const idx = blocks.indexOf(block);
+        const rect = block.getBoundingClientRect();
         const centerY = rect.top + rect.height/2;
-        for(let k=0;k<headers.length;k++){
-          if(headers[k] === header) continue;
-          const r2 = headers[k].getBoundingClientRect();
+        for(let k=0;k<blocks.length;k++){
+          if(blocks[k] === block) continue;
+          const r2 = blocks[k].getBoundingClientRect();
           const otherCenter = r2.top + r2.height/2;
           if(k < idx && centerY < otherCenter){
-            listEl.insertBefore(header, headers[k]);
-            startY = ev.clientY;
-            header.style.transform = 'translateY(0px)';
-            break;
+            listEl.insertBefore(block, blocks[k]);
+            startY = ev.clientY; block.style.transform = 'translateY(0px)'; break;
           }
           if(k > idx && centerY > otherCenter){
-            listEl.insertBefore(header, headers[k].nextSibling);
-            startY = ev.clientY;
-            header.style.transform = 'translateY(0px)';
-            break;
+            listEl.insertBefore(block, blocks[k].nextSibling);
+            startY = ev.clientY; block.style.transform = 'translateY(0px)'; break;
           }
         }
       }
       function onUp(){
-        header.classList.remove('dragging-group');
-        header.style.transform = '';
-        header.style.zIndex = '';
+        block.classList.remove('dragging-block');
+        block.style.transform = '';
+        block.style.zIndex = '';
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
-        const orderedIds = Array.from(listEl.querySelectorAll('.group-header'))
-          .filter(h => h.dataset.groupId)
-          .map(h => h.dataset.groupId);
-        const groups = getGroups();
-        const byId = {};
-        groups.forEach(g => byId[g.id] = g);
-        const newGroups = orderedIds.map(id => byId[id]).filter(Boolean);
-        setGroups(newGroups);
+
+        if(hoverGroupBlock){
+          hoverGroupBlock.classList.remove('drop-target');
+          const targetGroupId = hoverGroupBlock.dataset.entryId;
+          const itemId = block.dataset.entryId;
+          const cur = getSaved();
+          const it = cur.find(x => x.id === itemId);
+          if(it){ it.group = targetGroupId; setSaved(cur); }
+          renderList();
+          return;
+        }
+
+        const blocks = Array.from(listEl.children).filter(el => el.classList.contains('toplevel-block'));
+        const newOrder = blocks.map(b => ({ type: b.dataset.entryType, id: b.dataset.entryId }));
+        setTopOrder(newOrder);
         renderList();
       }
       window.addEventListener('pointermove', onMove);
@@ -854,11 +917,12 @@
 
         // グループヘッダーの上まで来てたらそこにドロップできる状態にする
         const headers = Array.from(listEl.querySelectorAll('.group-header'));
-        let matched = null;
+        let matchedHeader = null;
         for(const h of headers){
           const r = h.getBoundingClientRect();
-          if(ev.clientY >= r.top - 6 && ev.clientY <= r.bottom + 6){ matched = h; break; }
+          if(ev.clientY >= r.top - 6 && ev.clientY <= r.bottom + 6){ matchedHeader = h; break; }
         }
+        const matched = matchedHeader ? matchedHeader.closest('.group-block') : null;
         if(hoverHeader && hoverHeader !== matched) hoverHeader.classList.remove('drop-target');
         if(matched) matched.classList.add('drop-target');
         hoverHeader = matched;
@@ -896,7 +960,7 @@
         window.removeEventListener('pointerup', onUp);
         if(hoverHeader){
           hoverHeader.classList.remove('drop-target');
-          const groupId = hoverHeader.dataset.groupId || null;
+          const groupId = hoverHeader.dataset.entryId || null;
           const cur = getSaved();
           const idx = parseInt(row.dataset.origIdx, 10);
           cur[idx].group = groupId;
@@ -938,7 +1002,7 @@
     }, 0);
   }
 
-  function buildItemRow(item, i, groups, currentContent){
+  function buildItemRow(item, i, groups, currentContent, isTopLevel){
     const row = document.createElement('div');
     row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (currentContent && item.content === currentContent ? ' current' : '');
     row.dataset.origIdx = i;
@@ -1018,84 +1082,93 @@
       setSaved(cur);
       renderList();
     });
-    if(!item.pinned) attachDrag(row);
+    if(!item.pinned && !isTopLevel) attachDrag(row);
     return row;
   }
 
   function renderList(){
-    const arr = getSaved();
+    const items = getSaved();
     const groups = getGroups();
     const listEl = document.getElementById('savedList');
     const emptyEl = document.getElementById('savedEmpty');
     listEl.innerHTML = '';
-    if(arr.length === 0){ emptyEl.style.display='block'; return; }
+    if(items.length === 0){ emptyEl.style.display='block'; return; }
     emptyEl.style.display='none';
     const currentContent = stage.querySelector('svg') ? stage.innerHTML : null;
+    const order = reconcileTopOrder(items, groups);
 
-    function renderGroupItems(groupId, containerEl){
-      const itemsWithIdx = arr
-        .map((item,i)=>({item,i}))
-        .filter(o => (o.item.group||null) === groupId)
-        .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
-      itemsWithIdx.forEach(({item,i})=>{
-        containerEl.appendChild(buildItemRow(item, i, groups, currentContent));
-      });
-      return itemsWithIdx.length;
-    }
+    order.forEach(entry=>{
+      if(entry.type === 'group'){
+        const g = groups.find(x=>x.id===entry.id);
+        if(!g) return;
 
-    groups.forEach(g=>{
-      const header = document.createElement('div');
-      header.className = 'group-header';
-      header.dataset.groupId = g.id;
-      header.style.borderLeftColor = g.color;
-      header.innerHTML = `
-        <span class="group-handle" title="ドラッグでグループ並べ替え">⠿</span>
-        <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
-        <span class="group-name">${g.name}</span>
-        <button class="group-rename" title="名前変更">✏️</button>
-        <button class="group-del" title="グループ削除">🗑</button>
-      `;
-      listEl.appendChild(header);
-      attachGroupDrag(header);
+        const block = document.createElement('div');
+        block.className = 'toplevel-block group-block';
+        block.dataset.entryType = 'group';
+        block.dataset.entryId = g.id;
 
-      const body = document.createElement('div');
-      body.className = 'group-body';
-      body.dataset.group = g.id;
-      if(g.collapsed) body.style.display = 'none';
-      listEl.appendChild(body);
-      renderGroupItems(g.id, body);
+        const header = document.createElement('div');
+        header.className = 'group-header';
+        header.dataset.groupId = g.id;
+        header.style.borderLeftColor = g.color;
+        header.innerHTML = `
+          <span class="group-handle" title="ドラッグで並べ替え">⠿</span>
+          <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
+          <span class="group-name">${g.name}</span>
+          <button class="group-rename" title="名前変更">✏️</button>
+          <button class="group-del" title="グループ削除">🗑</button>
+        `;
+        block.appendChild(header);
 
-      header.querySelector('.group-toggle').onclick = ()=>{
-        g.collapsed = !g.collapsed;
-        setGroups(groups);
-        renderList();
-      };
-      header.querySelector('.group-rename').onclick = ()=>{
-        const newName = prompt('グループ名を変更', g.name);
-        if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
-      };
-      header.querySelector('.group-del').onclick = ()=>{
-        if(!confirm(`「${g.name}」を削除する？中のSVGは消えずに「グループなし」に戻るよ`)) return;
-        const cur = getSaved();
-        cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
-        setSaved(cur);
-        setGroups(groups.filter(x=>x.id!==g.id));
-        renderList();
-      };
+        const body = document.createElement('div');
+        body.className = 'group-body';
+        body.dataset.group = g.id;
+        if(g.collapsed) body.style.display = 'none';
+        block.appendChild(body);
+
+        const itemsWithIdx = items
+          .map((item,i)=>({item,i}))
+          .filter(o => (o.item.group||null) === g.id)
+          .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
+        itemsWithIdx.forEach(({item,i})=>{
+          body.appendChild(buildItemRow(item, i, groups, currentContent, false));
+        });
+
+        header.querySelector('.group-toggle').onclick = ()=>{
+          g.collapsed = !g.collapsed;
+          setGroups(groups);
+          renderList();
+        };
+        header.querySelector('.group-rename').onclick = ()=>{
+          const newName = prompt('グループ名を変更', g.name);
+          if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
+        };
+        header.querySelector('.group-del').onclick = ()=>{
+          if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
+          const cur = getSaved();
+          cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
+          setSaved(cur);
+          setGroups(groups.filter(x=>x.id!==g.id));
+          renderList();
+        };
+
+        attachTopLevelDrag(block);
+        listEl.appendChild(block);
+
+      } else if(entry.type === 'item'){
+        const idx = items.findIndex(it => it.id === entry.id);
+        if(idx === -1) return;
+        const item = items[idx];
+
+        const block = document.createElement('div');
+        block.className = 'toplevel-block item-block';
+        block.dataset.entryType = 'item';
+        block.dataset.entryId = item.id;
+        block.appendChild(buildItemRow(item, idx, groups, currentContent, true));
+        if(!item.pinned) attachTopLevelDrag(block);
+        listEl.appendChild(block);
+      }
     });
-
-    if(groups.length){
-      const header = document.createElement('div');
-      header.className = 'group-header ungrouped-header';
-      header.dataset.groupId = '';
-      header.innerHTML = `<span class="group-name">グループなし</span>`;
-      listEl.appendChild(header);
-    }
-    const ungroupedBody = document.createElement('div');
-    ungroupedBody.className = 'group-body';
-    ungroupedBody.dataset.group = '';
-    listEl.appendChild(ungroupedBody);
-    renderGroupItems(null, ungroupedBody);
   }
 
   document.getElementById('btnNewGroup').onclick = ()=>{
