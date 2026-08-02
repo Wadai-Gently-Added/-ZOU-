@@ -209,6 +209,11 @@
     padding:9px 10px; font-size:12.5px; border-radius:6px;
   }
   .ctx-menu button:active{ background:#262a31; }
+  .ctx-menu-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .ctx-arrow{ color:var(--sub); font-size:10px; }
+  .ctx-submenu{ z-index:51; }
   .color-pick-backdrop{
     position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60;
     display:flex; align-items:center; justify-content:center;
@@ -359,14 +364,6 @@
   }
   .print-title{ font-size:15px; font-weight:700; margin-bottom:6px; }
   .print-meta{ font-size:11px; color:#555; margin-bottom:2px; }
-  .print-preview{
-    margin:14px 0; min-height:140px; display:flex; align-items:center; justify-content:center;
-    border:1px solid #eee;
-  }
-  .print-preview svg{ max-width:100%; height:auto; }
-  .print-table{ width:100%; font-size:11px; border-collapse:collapse; margin-top:8px; }
-  .print-table td{ border:1px solid #ddd; padding:4px 8px; }
-  .print-table td:first-child{ color:#666; width:35%; }
   .print-note-label{ font-size:11px; color:#666; margin-top:14px; }
   .print-note-box{ border:1px solid #ddd; min-height:60px; margin-top:4px; padding:6px 8px; font-size:12px; color:#111; outline:none; }
   .print-note-box:empty:before{ content:'ここに書き込めるよ(印刷にも反映されます)'; color:#aaa; }
@@ -376,6 +373,32 @@
     white-space:pre-wrap; word-break:break-all; background:#fafafa;
     border:1px solid #ddd; border-radius:6px; padding:10px; margin-top:10px;
   }
+
+  /* 画像モード: 折り紙手順書のような番号+矢印フロー */
+  .flow-grid{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:10px;
+  }
+  .flow-step{
+    display:flex; flex-direction:column; align-items:center; width:140px;
+    border:1px solid #eee; border-radius:8px; padding:8px; background:#fafafa;
+  }
+  .flow-num{
+    width:22px; height:22px; border-radius:11px; background:#333; color:#fff;
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    margin-bottom:6px;
+  }
+  .flow-svg{ width:100%; height:100px; display:flex; align-items:center; justify-content:center; }
+  .flow-svg svg{ max-width:100%; max-height:100%; }
+  .flow-name{ font-size:10px; color:#555; margin-top:4px; text-align:center; word-break:break-all; }
+  .flow-arrow{ font-size:22px; color:#999; flex-shrink:0; }
+
+  /* コードモード: 一覧表+各コード */
+  .code-list-table{ width:100%; font-size:11px; border-collapse:collapse; margin-top:10px; }
+  .code-list-table th, .code-list-table td{ border:1px solid #ddd; padding:5px 8px; text-align:left; }
+  .code-list-table th{ background:#f5f5f5; color:#555; font-weight:600; }
+  .code-entry{ margin-top:16px; }
+  .code-entry-title{ font-size:12px; font-weight:700; color:#333; margin-bottom:4px; }
+
   .checklist-list{ margin-top:16px; }
   .checklist-row{
     display:flex; align-items:center; gap:10px; padding:10px 4px;
@@ -396,7 +419,8 @@
     }
     #printSheet .sheet-close, #printSheet #btnDoPrint, #printSheet h2, .print-hint{ display:none; }
     #printArea{ max-height:none; overflow:visible; padding:0; background:#fff !important; }
-    .print-page{ border:none; padding:14mm; background:#fff !important; page-break-inside:avoid; }
+    .print-page{ border:none; padding:14mm; background:#fff !important; }
+    .flow-step, .code-entry{ page-break-inside:avoid; }
   }
   /* PC(横幅ある画面)だけプレビュー/コードを別ページに分割。
      スマホのスタンドアロン印刷はpage-breakがほぼ無視されるので
@@ -651,6 +675,7 @@
     let changed = false;
     arr.forEach(it=>{
       if(!it.id){ it.id = 's' + Date.now() + Math.random().toString(36).slice(2,7); changed = true; }
+      if(!it.modifiedAt){ it.modifiedAt = it.savedAt; changed = true; }
     });
     if(changed){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }catch(e){} }
     return arr;
@@ -679,7 +704,8 @@
     }
     const name = prompt('保存名を入れてね', suggested);
     if(name === null) return false;
-    arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false, group:null });
+    const now = new Date().toISOString();
+    arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: stage.innerHTML, savedAt: now, modifiedAt: now, pinned:false, group:null });
     setSaved(arr.slice(0, 100));
     isDirty = false;
     return true;
@@ -697,13 +723,11 @@
         if(saveCurrent()) alert('保存したみゅ！');
       }},
       { label: '📥 SVGファイル保存', onClick: ()=> document.getElementById('btnDownload').click() },
-      { label: '🖨 印刷', onClick: ()=>{
+      { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
         const svgEl = stage.querySelector('svg');
         if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
-        showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
-          openSinglePrint(currentName, svgEl.outerHTML, mode);
-        });
-      }}
+        openSinglePrint(currentName, svgEl.outerHTML, mode);
+      })}
     ]);
   });
 
@@ -814,56 +838,72 @@
   const printSheet = document.getElementById('printSheet');
   const printBackdrop = document.getElementById('printBackdrop');
 
-  function buildPrintImagePage(name, code){
-    let sizeText = '-', vbText = '(なし)';
-    try{
-      const tmp = document.createElement('div');
-      tmp.innerHTML = code;
-      const svgEl = tmp.querySelector('svg');
-      const vb = svgEl && svgEl.viewBox && svgEl.viewBox.baseVal;
-      if(vb && vb.width){
-        sizeText = `${vb.width} × ${vb.height}`;
-        vbText = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
-      }
-    }catch(e){}
-    const dateText = new Date().toLocaleString('ja-JP');
-    const nameEsc = (name || '(無題)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function escHtml(s){
+    return (s == null ? '' : String(s)).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function fmtDate(iso){
+    if(!iso) return '-';
+    try{ return new Date(iso).toLocaleString('ja-JP'); }catch(e){ return '-'; }
+  }
+
+  // ① 画像モード: 折り紙の手順書のように「①SVG+ファイル名」を→でつないで並べる
+  function buildFlowSection(items){
+    const cells = items.map((it, i)=>{
+      const nameEsc = escHtml(it.name || '(無題)');
+      return `
+        <div class="flow-step">
+          <div class="flow-num">${i+1}</div>
+          <div class="flow-svg">${it.content}</div>
+          <div class="flow-name">${nameEsc}</div>
+        </div>`;
+    });
+    const parts = [];
+    cells.forEach((c,i)=>{
+      parts.push(c);
+      if(i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
+    });
     return `
-      <div class="print-page">
-        <div class="print-title">SVG Viewer プレビュー</div>
-        <div class="print-meta">ファイル名: ${nameEsc}</div>
-        <div class="print-meta">作成日時: ${dateText}</div>
-        <div class="print-preview">${code}</div>
-        <table class="print-table">
-          <tr><td>サイズ</td><td>${sizeText}</td></tr>
-          <tr><td>ViewBox</td><td>${vbText}</td></tr>
-        </table>
+      <div class="print-page flow-page">
+        <div class="print-title">SVG 手順</div>
+        <div class="flow-grid">${parts.join('')}</div>
         <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
         <div class="print-note-box" contenteditable="true"></div>
       </div>
     `;
   }
 
-  function buildPrintCodePage(name, code){
-    const lines = code.split('\n').length;
-    const chars = code.length;
-    const nameEsc = (name || '(無題)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const codeEsc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // ② コードモード: ファイル名+作成日時+修正日時の一覧表 → その下に各コード
+  function buildCodeListSection(items){
+    const rows = items.map((it,i)=>{
+      const nameEsc = escHtml(it.name || '(無題)');
+      return `<tr><td>${i+1}</td><td>${nameEsc}</td><td>${fmtDate(it.savedAt)}</td><td>${fmtDate(it.modifiedAt || it.savedAt)}</td></tr>`;
+    }).join('');
+    const entries = items.map((it,i)=>{
+      const nameEsc = escHtml(it.name || '(無題)');
+      const codeEsc = escHtml(it.content);
+      return `
+        <div class="code-entry">
+          <div class="code-entry-title">${i+1}. ${nameEsc}</div>
+          <pre class="print-code">${codeEsc}</pre>
+        </div>`;
+    }).join('');
     return `
       <div class="print-page">
-        <div class="print-title">SVG コード</div>
-        <div class="print-meta">ファイル名: ${nameEsc}</div>
-        <div class="print-meta">行数・文字数: ${lines}行 / ${chars}文字</div>
-        <pre class="print-code">${codeEsc}</pre>
+        <div class="print-title">SVG コード一覧</div>
+        <table class="code-list-table">
+          <thead><tr><th>#</th><th>ファイル名</th><th>作成日時</th><th>修正日時</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${entries}
       </div>
     `;
   }
 
-  // mode: 'image' | 'code' | 'both'
-  function buildPrintPages(name, code, mode){
+  // mode: 'image' | 'code' | 'both'  /  items: [{name, content, savedAt, modifiedAt}, ...]
+  function buildPrintOutput(items, mode){
     let html = '';
-    if(mode === 'image' || mode === 'both') html += buildPrintImagePage(name, code);
-    if(mode === 'code' || mode === 'both') html += buildPrintCodePage(name, code);
+    if(mode === 'image' || mode === 'both') html += buildFlowSection(items);
+    if(mode === 'code' || mode === 'both') html += buildCodeListSection(items);
     return html;
   }
 
@@ -880,16 +920,23 @@
     printSheet.classList.add('open'); printBackdrop.classList.add('open');
   }
 
-  function showPrintSubmenu(x, y, onPick){
-    showContextMenu(x, y, [
+  function printSubmenuOptions(onPick){
+    return [
       { label: '🖼 SVG(画像)のみ', onClick: ()=> onPick('image') },
       { label: '🔤 コードのみ', onClick: ()=> onPick('code') },
       { label: '🖼🔤 SVG＋コード', onClick: ()=> onPick('both') }
-    ]);
+    ];
   }
 
-  function openSinglePrint(name, code, mode){
-    openPrintSheet(buildPrintPages(name, code, mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
+  function openSinglePrint(name, code, mode, meta){
+    const now = new Date().toISOString();
+    const item = {
+      name,
+      content: code,
+      savedAt: (meta && meta.savedAt) || now,
+      modifiedAt: (meta && meta.modifiedAt) || (meta && meta.savedAt) || now
+    };
+    openPrintSheet(buildPrintOutput([item], mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
   }
 
   document.getElementById('btnPrintView').onclick = ()=>{
@@ -901,8 +948,7 @@
   function openGroupPrint(groupId, groupName, mode){
     const items = getSaved().filter(it => (it.group||null) === groupId);
     if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-    const html = items.map(it => buildPrintPages(it.name, it.content, mode)).join('');
-    openPrintSheet(html, `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
+    openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
   }
 
   function buildChecklistHTML(groupName, items){
@@ -1156,26 +1202,81 @@
   function closeContextMenu(){
     const el = document.getElementById('ctxMenu');
     if(el) el.remove();
+    document.querySelectorAll('.ctx-submenu').forEach(el2 => el2.remove());
   }
+
+  function positionFlyout(el, anchorRect){
+    const fw = el.offsetWidth, fh = el.offsetHeight;
+    let left = anchorRect.right + 2;
+    if(left + fw > window.innerWidth) left = anchorRect.left - fw - 2;
+    let top = anchorRect.top;
+    if(top + fh > window.innerHeight) top = window.innerHeight - fh - 8;
+    if(top < 8) top = 8;
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  }
+
   function showContextMenu(x, y, options){
     closeContextMenu();
     const menu = document.createElement('div');
     menu.className = 'ctx-menu';
     menu.id = 'ctxMenu';
+
     options.forEach(opt=>{
       const btn = document.createElement('button');
-      btn.textContent = opt.label;
-      btn.onclick = (e)=>{
-        e.stopPropagation();
-        opt.onClick();
-        // opt.onClick()が新しいメニュー(サブメニュー)を開いた場合は
-        // ここで閉じない。今の#ctxMenuがまだ自分自身の時だけ閉じる
-        if(document.getElementById('ctxMenu') === menu){
-          closeContextMenu();
+      btn.className = 'ctx-menu-item';
+
+      if(opt.submenu){
+        btn.innerHTML = `<span>${opt.label}</span><span class="ctx-arrow">▶</span>`;
+        let flyout = null;
+        let hideTimer = null;
+
+        function buildFlyout(){
+          const f = document.createElement('div');
+          f.className = 'ctx-menu ctx-submenu';
+          opt.submenu.forEach(sub=>{
+            const sbtn = document.createElement('button');
+            sbtn.className = 'ctx-menu-item';
+            sbtn.textContent = sub.label;
+            sbtn.onclick = (e)=>{
+              e.stopPropagation();
+              sub.onClick();
+              closeContextMenu();
+            };
+            f.appendChild(sbtn);
+          });
+          document.body.appendChild(f);
+          positionFlyout(f, btn.getBoundingClientRect());
+          f.addEventListener('mouseenter', ()=>{ if(hideTimer) clearTimeout(hideTimer); });
+          f.addEventListener('mouseleave', scheduleHide);
+          return f;
         }
-      };
+        function scheduleHide(){
+          hideTimer = setTimeout(()=>{
+            if(flyout){ flyout.remove(); flyout = null; }
+          }, 220);
+        }
+        btn.addEventListener('mouseenter', ()=>{
+          if(hideTimer) clearTimeout(hideTimer);
+          if(!flyout) flyout = buildFlyout();
+        });
+        btn.addEventListener('mouseleave', scheduleHide);
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          if(flyout){ flyout.remove(); flyout = null; }
+          else flyout = buildFlyout();
+        });
+      } else {
+        btn.textContent = opt.label;
+        btn.onclick = (e)=>{
+          e.stopPropagation();
+          opt.onClick();
+          closeContextMenu();
+        };
+      }
       menu.appendChild(btn);
     });
+
     document.body.appendChild(menu);
     const mw = menu.offsetWidth, mh = menu.offsetHeight;
     let left = x, top = y;
@@ -1269,15 +1370,13 @@
         if(newName === null || !newName.trim()) return;
         const cur = getSaved();
         const it = cur.find(x=>x.id===item.id);
-        if(it) it.name = newName.trim();
+        if(it){ it.name = newName.trim(); it.modifiedAt = new Date().toISOString(); }
         setSaved(cur);
         renderList();
       }});
-      opts.push({ label: '🖨 印刷', onClick: ()=>{
-        showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
-          openSinglePrint(item.name, item.content, mode);
-        });
-      }});
+      opts.push({ label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+        openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
+      })});
       opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
         const name = prompt('グループ名を入れてね', '新しいグループ');
         if(!name || !name.trim()) return;
@@ -1377,12 +1476,10 @@
                 g.color = color; setGroups(groups); renderList();
               });
             }},
-            { label: '🖨 印刷', onClick: ()=>{
-              showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
-                closeList();
-                openGroupPrint(g.id, g.name, mode);
-              });
-            }},
+            { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+              closeList();
+              openGroupPrint(g.id, g.name, mode);
+            })},
             { label: '☑️ チェックリスト出力', onClick: ()=>{
               closeList();
               openChecklist(g.id, g.name);
