@@ -984,16 +984,16 @@
         const dy = ev.clientY - startY;
         row.style.transform = `translateY(${dy}px)`;
 
-        // 別のグループのヘッダーの上まで来てたらそこにドロップできる状態にする
-        // (自分が今いるグループの上に乗ってもハイライトしない=普通の並べ替え扱い)
-        const headers = Array.from(listEl.querySelectorAll('.group-header'));
-        let matchedHeader = null;
-        for(const h of headers){
-          if(h.dataset.groupId === ownGroupId) continue;
-          const r = h.getBoundingClientRect();
-          if(ev.clientY >= r.top - 6 && ev.clientY <= r.bottom + 6){ matchedHeader = h; break; }
+        // 別のグループの上まで来てたらそこにドロップできる状態にする
+        // (見出しだけじゃなく、中身も含めたブロック全体が対象。
+        //  自分が今いるグループの上に乗ってもハイライトしない=普通の並べ替え扱い)
+        const blocks = Array.from(listEl.querySelectorAll('.group-block'));
+        let matched = null;
+        for(const b of blocks){
+          if(b.dataset.entryId === ownGroupId) continue;
+          const r = b.getBoundingClientRect();
+          if(ev.clientY >= r.top && ev.clientY <= r.bottom){ matched = b; break; }
         }
-        const matched = matchedHeader ? matchedHeader.closest('.group-block') : null;
         if(hoverTarget && hoverTarget !== matched) hoverTarget.classList.remove('drop-target');
         if(matched) matched.classList.add('drop-target');
         hoverTarget = matched;
