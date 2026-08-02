@@ -697,7 +697,13 @@
         if(saveCurrent()) alert('保存したみゅ！');
       }},
       { label: '📥 SVGファイル保存', onClick: ()=> document.getElementById('btnDownload').click() },
-      { label: '🖨 印刷用に開く', onClick: ()=> document.getElementById('btnPrintView').click() }
+      { label: '🖨 印刷', onClick: ()=>{
+        const svgEl = stage.querySelector('svg');
+        if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
+        showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
+          openSinglePrint(currentName, svgEl.outerHTML, mode);
+        });
+      }}
     ]);
   });
 
@@ -808,7 +814,7 @@
   const printSheet = document.getElementById('printSheet');
   const printBackdrop = document.getElementById('printBackdrop');
 
-  function buildPrintPagesHTML(name, code){
+  function buildPrintImagePage(name, code){
     let sizeText = '-', vbText = '(なし)';
     try{
       const tmp = document.createElement('div');
@@ -820,11 +826,8 @@
         vbText = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
       }
     }catch(e){}
-    const lines = code.split('\n').length;
-    const chars = code.length;
     const dateText = new Date().toLocaleString('ja-JP');
     const nameEsc = (name || '(無題)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const codeEsc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return `
       <div class="print-page">
         <div class="print-title">SVG Viewer プレビュー</div>
@@ -838,6 +841,15 @@
         <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
         <div class="print-note-box" contenteditable="true"></div>
       </div>
+    `;
+  }
+
+  function buildPrintCodePage(name, code){
+    const lines = code.split('\n').length;
+    const chars = code.length;
+    const nameEsc = (name || '(無題)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const codeEsc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `
       <div class="print-page">
         <div class="print-title">SVG コード</div>
         <div class="print-meta">ファイル名: ${nameEsc}</div>
@@ -847,26 +859,50 @@
     `;
   }
 
+  // mode: 'image' | 'code' | 'both'
+  function buildPrintPages(name, code, mode){
+    let html = '';
+    if(mode === 'image' || mode === 'both') html += buildPrintImagePage(name, code);
+    if(mode === 'code' || mode === 'both') html += buildPrintCodePage(name, code);
+    return html;
+  }
+
+  function printModeLabel(mode){
+    return mode === 'image' ? 'SVG' : mode === 'code' ? 'コード' : 'SVG＋コード';
+  }
+
   function openPrintSheet(html, title){
     document.getElementById('printArea').innerHTML = html;
-    document.getElementById('printSheetTitle').textContent = title || '印刷プレビュー（2ページ構成）';
+    document.getElementById('printSheetTitle').textContent = title || '印刷プレビュー';
     const area = document.getElementById('printArea');
     if(area) area.scrollTop = 0;
     window.scrollTo(0, 0);
     printSheet.classList.add('open'); printBackdrop.classList.add('open');
   }
 
+  function showPrintSubmenu(x, y, onPick){
+    showContextMenu(x, y, [
+      { label: '🖼 SVG(画像)のみ', onClick: ()=> onPick('image') },
+      { label: '🔤 コードのみ', onClick: ()=> onPick('code') },
+      { label: '🖼🔤 SVG＋コード', onClick: ()=> onPick('both') }
+    ]);
+  }
+
+  function openSinglePrint(name, code, mode){
+    openPrintSheet(buildPrintPages(name, code, mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
+  }
+
   document.getElementById('btnPrintView').onclick = ()=>{
     const svgEl = stage.querySelector('svg');
     if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
-    openPrintSheet(buildPrintPagesHTML(currentName, svgEl.outerHTML));
+    openSinglePrint(currentName, svgEl.outerHTML, 'both');
   };
 
-  function openGroupPrint(groupId, groupName){
+  function openGroupPrint(groupId, groupName, mode){
     const items = getSaved().filter(it => (it.group||null) === groupId);
     if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-    const html = items.map(it => buildPrintPagesHTML(it.name, it.content)).join('');
-    openPrintSheet(html, `${groupName || 'グループ'} 一括印刷（全${items.length}件）`);
+    const html = items.map(it => buildPrintPages(it.name, it.content, mode)).join('');
+    openPrintSheet(html, `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
   }
 
   function buildChecklistHTML(groupName, items){
@@ -1229,6 +1265,11 @@
         setSaved(cur);
         renderList();
       }});
+      opts.push({ label: '🖨 印刷', onClick: ()=>{
+        showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
+          openSinglePrint(item.name, item.content, mode);
+        });
+      }});
       opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
         const name = prompt('グループ名を入れてね', '新しいグループ');
         if(!name || !name.trim()) return;
@@ -1328,9 +1369,11 @@
                 g.color = color; setGroups(groups); renderList();
               });
             }},
-            { label: '🖨 グループを一括印刷', onClick: ()=>{
-              closeList();
-              openGroupPrint(g.id, g.name);
+            { label: '🖨 印刷', onClick: ()=>{
+              showPrintSubmenu(ev.clientX, ev.clientY, (mode)=>{
+                closeList();
+                openGroupPrint(g.id, g.name, mode);
+              });
             }},
             { label: '☑️ チェックリスト出力', onClick: ()=>{
               closeList();
