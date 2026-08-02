@@ -1165,7 +1165,15 @@
     options.forEach(opt=>{
       const btn = document.createElement('button');
       btn.textContent = opt.label;
-      btn.onclick = (e)=>{ e.stopPropagation(); opt.onClick(); closeContextMenu(); };
+      btn.onclick = (e)=>{
+        e.stopPropagation();
+        opt.onClick();
+        // opt.onClick()が新しいメニュー(サブメニュー)を開いた場合は
+        // ここで閉じない。今の#ctxMenuがまだ自分自身の時だけ閉じる
+        if(document.getElementById('ctxMenu') === menu){
+          closeContextMenu();
+        }
+      };
       menu.appendChild(btn);
     });
     document.body.appendChild(menu);
