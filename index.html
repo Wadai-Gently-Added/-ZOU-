@@ -236,9 +236,6 @@
     color:var(--sub); font-size:14px; padding:2px 4px; cursor:grab; touch-action:none;
   }
   .group-header .group-name{ font-size:12.5px; font-weight:700; flex:1; padding-left:4px; }
-  .group-header .group-rename, .group-header .group-del{
-    background:none; border:none; font-size:13px; padding:4px 5px; color:var(--sub);
-  }
   .group-select{
     background:var(--panel); color:var(--sub); border:1px solid var(--line);
     border-radius:6px; font-size:10px; max-width:52px; padding:3px 1px; flex-shrink:0;
@@ -477,6 +474,7 @@
   let scale = 1, tx = 0, ty = 0;
   let currentName = null;
   let suppressClickUntil = 0;
+  let isDirty = false;
 
   function applyTransform(){
     stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
@@ -631,7 +629,7 @@
   document.getElementById('btnClipboard').onclick = async ()=>{
     try{
       const text = await navigator.clipboard.readText();
-      loadSVG(text, 'クリップボードから');
+      guardedLoad(()=>{ loadSVG(text, 'クリップボードから'); isDirty = true; });
     }catch(err){
       alert('クリップボードを読めなかったみゅ。Safariの設定で許可が必要な場合があるよ。「貼り付け」ボタンから手動で貼ってね');
     }
@@ -647,8 +645,8 @@
   pasteBackdrop.onclick = closePaste;
   document.getElementById('btnPasteLoad').onclick = ()=>{
     const val = document.getElementById('pasteBox').value;
-    loadSVG(val, '手動貼り付け');
     closePaste();
+    guardedLoad(()=>{ loadSVG(val, '手動貼り付け'); isDirty = true; });
   };
 
   /* ---- file input ---- */
@@ -657,7 +655,7 @@
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = ()=> loadSVG(reader.result, file.name);
+    reader.onload = ()=> guardedLoad(()=>{ loadSVG(reader.result, file.name); isDirty = true; });
     reader.readAsText(file);
     e.target.value = '';
   };
@@ -679,9 +677,9 @@
     catch(e){ alert('保存に失敗したみゅ（容量オーバーかも）'); }
   }
 
-  document.getElementById('btnSave').onclick = ()=>{
+  function saveCurrent(){
     const svgEl = stage.querySelector('svg');
-    if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
+    if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return false; }
     const arr = getSaved();
     let suggested = currentName || ('SVG ' + new Date().toLocaleString('ja-JP'));
     const base = suggested.replace(/\s*\(\d+\)\s*$/, '');
@@ -697,11 +695,55 @@
       suggested = base + '(' + next + ')';
     }
     const name = prompt('保存名を入れてね', suggested);
-    if(name === null) return;
+    if(name === null) return false;
     arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: stage.innerHTML, savedAt: new Date().toISOString(), pinned:false, group:null });
     setSaved(arr.slice(0, 100));
-    alert('保存したみゅ！');
+    isDirty = false;
+    return true;
+  }
+
+  document.getElementById('btnSave').onclick = ()=>{
+    if(saveCurrent()) alert('保存したみゅ！');
   };
+
+  // 未保存の作業中データを守るための確認モーダル
+  function showUnsavedPrompt(onProceed){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'color-pick-backdrop';
+    const panel = document.createElement('div');
+    panel.className = 'color-pick-panel';
+    panel.innerHTML = `<div class="color-pick-title">今表示中の内容が保存されてないみゅ。<br>どうする？</div>`;
+    const row1 = document.createElement('button');
+    row1.className = 'btn accent';
+    row1.style.width = '100%'; row1.style.marginBottom = '8px';
+    row1.textContent = '保存してから開く';
+    row1.onclick = ()=>{
+      document.body.removeChild(backdrop);
+      if(saveCurrent()) onProceed();
+    };
+    const row2 = document.createElement('button');
+    row2.className = 'btn';
+    row2.style.width = '100%'; row2.style.marginBottom = '8px';
+    row2.textContent = '保存せず開く';
+    row2.onclick = ()=>{
+      document.body.removeChild(backdrop);
+      onProceed();
+    };
+    const row3 = document.createElement('button');
+    row3.className = 'color-pick-cancel';
+    row3.textContent = 'キャンセル';
+    row3.onclick = ()=> document.body.removeChild(backdrop);
+    panel.appendChild(row1);
+    panel.appendChild(row2);
+    panel.appendChild(row3);
+    backdrop.appendChild(panel);
+    backdrop.onclick = (e)=>{ if(e.target === backdrop) document.body.removeChild(backdrop); };
+    document.body.appendChild(backdrop);
+  }
+  function guardedLoad(fn){
+    if(isDirty){ showUnsavedPrompt(fn); }
+    else{ fn(); }
+  }
 
   document.getElementById('btnDownload').onclick = ()=>{
     const svgEl = stage.querySelector('svg');
@@ -829,6 +871,7 @@
     const val = codeBox.value;
     if(!val.trim()){ alert('コードが空みゅ'); return; }
     loadSVG(val, currentName);
+    isDirty = true;
     closeCode();
   };
 
@@ -851,6 +894,7 @@
     const handle = block.querySelector('.group-handle') || block.querySelector('.handle');
     if(!handle) return;
     handle.addEventListener('pointerdown', (e)=>{
+      if(e.button !== 0) return;
       e.preventDefault();
       const listEl = document.getElementById('savedList');
       let startY = e.clientY;
@@ -926,6 +970,7 @@
   function attachDrag(row){
     const handle = row.querySelector('.handle');
     handle.addEventListener('pointerdown', (e)=>{
+      if(e.button !== 0) return;
       e.preventDefault();
       const container = row.parentElement;
       const ownBlock = container.parentElement; // .group-block
@@ -1102,8 +1147,11 @@
     `;
     row.querySelector('.thumb').addEventListener('click', ()=>{
       if(Date.now() < suppressClickUntil) return;
-      loadSVG(item.content, item.name);
-      renderList();
+      guardedLoad(()=>{
+        loadSVG(item.content, item.name);
+        isDirty = false;
+        renderList();
+      });
     });
     row.querySelector('.group-select').addEventListener('click', ev=> ev.stopPropagation());
     row.querySelector('.group-select').addEventListener('change', (ev)=>{
@@ -1203,8 +1251,6 @@
           <span class="group-handle" title="ドラッグで並べ替え">⠿</span>
           <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
           <span class="group-name">${g.name}</span>
-          <button class="group-rename" title="名前変更">✏️</button>
-          <button class="group-del" title="グループ削除">🗑</button>
         `;
         block.appendChild(header);
 
@@ -1215,18 +1261,29 @@
           setGroups(groups);
           renderList();
         };
-        header.querySelector('.group-rename').onclick = ()=>{
-          const newName = prompt('グループ名を変更', g.name);
-          if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
-        };
-        header.querySelector('.group-del').onclick = ()=>{
-          if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
-          const cur = getSaved();
-          cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
-          setSaved(cur);
-          setGroups(groups.filter(x=>x.id!==g.id));
-          renderList();
-        };
+        header.addEventListener('contextmenu', (ev)=>{
+          ev.preventDefault();
+          suppressClickUntil = Date.now() + 500;
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label: '✏️ 名前を変更', onClick: ()=>{
+              const newName = prompt('グループ名を変更', g.name);
+              if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
+            }},
+            { label: '🎨 色を変える', onClick: ()=>{
+              pickGroupColor((color)=>{
+                g.color = color; setGroups(groups); renderList();
+              });
+            }},
+            { label: '🗑 グループ削除', onClick: ()=>{
+              if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
+              const cur = getSaved();
+              cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
+              setSaved(cur);
+              setGroups(groups.filter(x=>x.id!==g.id));
+              renderList();
+            }}
+          ]);
+        });
 
         const body = document.createElement('div');
         body.className = 'group-body';
