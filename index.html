@@ -182,6 +182,12 @@
     color:var(--sub); font-size:16px; padding:6px 4px; cursor:grab;
     touch-action:none; flex-shrink:0;
   }
+  .print-select-box{ width:18px; height:18px; flex-shrink:0; }
+  #printSelectBar{
+    display:flex; align-items:center; gap:8px; padding:10px 4px;
+    border-top:1px solid var(--line); font-size:12.5px; color:var(--sub);
+  }
+  #printSelectCount{ flex:1; }
   .saved-item .handle.locked{ cursor:default; font-size:14px; }
   .saved-item.pinned{ background:rgba(255,255,255,.03); }
 
@@ -301,10 +307,6 @@
       <button class="btn" id="btnWake">☀️ 常時点灯</button>
       <button class="btn" id="btnFocus">👁 全体表示</button>
     </div>
-    <div class="row">
-      <button class="btn accent" id="btnDownload">📥 SVGファイル保存</button>
-      <button class="btn accent" id="btnPrintView">🖨 印刷用に開く</button>
-    </div>
   </div>
 
 </div>
@@ -331,6 +333,11 @@
   </h2>
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
   <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
+  <div id="printSelectBar" style="display:none;">
+    <span id="printSelectCount">選択中: 0件</span>
+    <button id="btnPrintSelectGo" class="btn accent" style="flex:0 0 auto; padding:6px 12px;">🖨 印刷する</button>
+    <button id="btnPrintSelectCancel" class="btn" style="flex:0 0 auto; padding:6px 12px;">キャンセル</button>
+  </div>
   <div class="sheet-close" id="listCancel">閉じる</div>
 </div>
 
@@ -387,7 +394,7 @@
     font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;
     margin-bottom:6px;
   }
-  .flow-svg{ width:100%; height:100px; display:flex; align-items:center; justify-content:center; }
+  .flow-svg{ width:100%; height:100px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .flow-svg svg{ max-width:100%; max-height:100%; }
   .flow-name{ font-size:10px; color:#555; margin-top:4px; text-align:center; word-break:break-all; }
   .flow-arrow{ font-size:22px; color:#999; flex-shrink:0; }
@@ -408,6 +415,7 @@
   .checklist-num{ color:#888; font-size:12px; min-width:20px; }
   .checklist-name{ font-weight:600; }
 
+  @page{ size: A4; margin: 12mm; }
   @media print{
     html, body{ background:#fff !important; }
     body *{ visibility:hidden; }
@@ -722,7 +730,7 @@
       { label: '＋ マイSVGに登録', onClick: ()=>{
         if(saveCurrent()) alert('保存したみゅ！');
       }},
-      { label: '📥 SVGファイル保存', onClick: ()=> document.getElementById('btnDownload').click() },
+      { label: '📥 SVGファイル保存', onClick: downloadCurrentSVG },
       { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
         const svgEl = stage.querySelector('svg');
         if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
@@ -770,7 +778,7 @@
     else{ fn(); }
   }
 
-  document.getElementById('btnDownload').onclick = ()=>{
+  function downloadCurrentSVG(){
     const svgEl = stage.querySelector('svg');
     if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
     const defaultName = (currentName || 'svg-export').replace(/\.[a-zA-Z0-9]+$/, '');
@@ -789,7 +797,7 @@
     a.click();
     document.body.removeChild(a);
     setTimeout(()=> URL.revokeObjectURL(url), 3000);
-  };
+  }
 
   /* ---- wake lock (常時点灯) ---- */
   const wakeBtn = document.getElementById('btnWake');
@@ -846,6 +854,30 @@
     try{ return new Date(iso).toLocaleString('ja-JP'); }catch(e){ return '-'; }
   }
 
+  // ビューア表示用に固定px幅/高さが焼き付いたSVGコードを、
+  // 印刷の小さな枠にきれいに収まるよう相対サイズに作り替える
+  function svgForThumbnail(code){
+    try{
+      const tmp = document.createElement('div');
+      tmp.innerHTML = code;
+      const svgEl = tmp.querySelector('svg');
+      if(svgEl){
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.style.width = '100%';
+        svgEl.style.height = '100%';
+        svgEl.style.maxWidth = '100%';
+        svgEl.style.maxHeight = '100%';
+        svgEl.style.overflow = 'visible';
+        if(!svgEl.getAttribute('preserveAspectRatio')){
+          svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+        return tmp.innerHTML;
+      }
+    }catch(e){}
+    return code;
+  }
+
   // ① 画像モード: 折り紙の手順書のように「①SVG+ファイル名」を→でつないで並べる
   function buildFlowSection(items){
     const cells = items.map((it, i)=>{
@@ -853,7 +885,7 @@
       return `
         <div class="flow-step">
           <div class="flow-num">${i+1}</div>
-          <div class="flow-svg">${it.content}</div>
+          <div class="flow-svg">${svgForThumbnail(it.content)}</div>
           <div class="flow-name">${nameEsc}</div>
         </div>`;
     });
@@ -939,22 +971,10 @@
     openPrintSheet(buildPrintOutput([item], mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
   }
 
-  document.getElementById('btnPrintView').onclick = ()=>{
-    const svgEl = stage.querySelector('svg');
-    if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
-    openSinglePrint(currentName, svgEl.outerHTML, 'both');
-  };
-
-  function openGroupPrint(groupId, groupName, mode){
-    const items = getSaved().filter(it => (it.group||null) === groupId);
-    if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-    openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
-  }
-
   function buildChecklistHTML(groupName, items){
     const dateText = new Date().toLocaleString('ja-JP');
     const rows = items.map((it,i)=>{
-      const nameEsc = (it.name || '(無題)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const nameEsc = escHtml(it.name || '(無題)');
       return `
         <div class="checklist-row">
           <span class="checklist-box">☐</span>
@@ -962,20 +982,51 @@
           <span class="checklist-name">${nameEsc}</span>
         </div>`;
     }).join('');
-    const nameEsc = (groupName || 'チェックリスト').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const nameEsc = escHtml(groupName || 'チェックリスト');
     return `
       <div class="print-page checklist-page">
-        <div class="print-title">${nameEsc}　チェックリスト</div>
+        <div class="print-title">${nameEsc}　一覧</div>
         <div class="print-meta">作成日時: ${dateText}</div>
         <div class="print-meta">項目数: ${items.length}件</div>
         <div class="checklist-list">${rows}</div>
       </div>`;
   }
 
-  function openChecklist(groupId, groupName){
+  function openGroupPrint(groupId, groupName, mode){
     const items = getSaved().filter(it => (it.group||null) === groupId);
     if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-    openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'} チェックリスト`);
+    // 複数件まとめて印刷する時は先頭に一覧(チェックリスト)ページを付ける
+    const indexHtml = items.length > 1 ? buildChecklistHTML(groupName, items) : '';
+    openPrintSheet(indexHtml + buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  }
+
+  // 選んだ項目だけをまとめて印刷する
+  function openMultiPrint(items, mode, title){
+    if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
+    const indexHtml = items.length > 1 ? buildChecklistHTML(title, items) : '';
+    openPrintSheet(indexHtml + buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  }
+
+  // ---- 選んで印刷モード ----
+  let printSelectGroupId = null;
+  const printSelectedIds = new Set();
+
+  function enterPrintSelectMode(groupId){
+    printSelectGroupId = groupId;
+    printSelectedIds.clear();
+    renderList();
+  }
+  function exitPrintSelectMode(){
+    printSelectGroupId = null;
+    printSelectedIds.clear();
+    renderList();
+  }
+  function updatePrintSelectBar(){
+    const bar = document.getElementById('printSelectBar');
+    if(!bar) return;
+    if(printSelectGroupId === null){ bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    document.getElementById('printSelectCount').textContent = `選択中: ${printSelectedIds.size}件`;
   }
 
   document.getElementById('printCancel').onclick = ()=>{
@@ -1329,9 +1380,12 @@
     row.dataset.itemId = item.id;
     row.dataset.group = item.group || '';
     const d = new Date(item.savedAt);
-    const handleHtml = item.pinned
-      ? '<span class="handle locked" title="ピン留め中は固定">📌</span>'
-      : '<span class="handle" title="ドラッグで並べ替え">⠿</span>';
+    const inSelectMode = (printSelectGroupId !== null) && ((item.group||null) === printSelectGroupId);
+    const handleHtml = inSelectMode
+      ? `<input type="checkbox" class="print-select-box" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
+      : (item.pinned
+        ? '<span class="handle locked" title="ピン留め中は固定">📌</span>'
+        : '<span class="handle" title="ドラッグで並べ替え">⠿</span>');
     const options = ['<option value="">グループなし</option>']
       .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
     row.innerHTML = `
@@ -1344,8 +1398,22 @@
       <select class="group-select">${options.join('')}</select>
       <button class="pin" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
     `;
+    if(inSelectMode){
+      const box = row.querySelector('.print-select-box');
+      box.addEventListener('click', ev=> ev.stopPropagation());
+      box.addEventListener('change', ()=>{
+        if(box.checked) printSelectedIds.add(item.id); else printSelectedIds.delete(item.id);
+        updatePrintSelectBar();
+      });
+    }
     row.querySelector('.thumb').addEventListener('click', ()=>{
       if(Date.now() < suppressClickUntil) return;
+      if(inSelectMode){
+        const box = row.querySelector('.print-select-box');
+        box.checked = !box.checked;
+        box.dispatchEvent(new Event('change'));
+        return;
+      }
       guardedLoad(()=>{
         loadSVG(item.content, item.name);
         isDirty = false;
@@ -1420,7 +1488,7 @@
       setSaved(cur);
       renderList();
     });
-    if(!item.pinned && !isTopLevel) attachDrag(row);
+    if(!item.pinned && !isTopLevel && !inSelectMode) attachDrag(row);
     return row;
   }
 
@@ -1480,9 +1548,8 @@
               closeList();
               openGroupPrint(g.id, g.name, mode);
             })},
-            { label: '☑️ チェックリスト出力', onClick: ()=>{
-              closeList();
-              openChecklist(g.id, g.name);
+            { label: '☑️ 選んで印刷', onClick: ()=>{
+              enterPrintSelectMode(g.id);
             }},
             { label: '🗑 グループ削除', onClick: ()=>{
               if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
@@ -1530,6 +1597,25 @@
         listEl.appendChild(block);
       }
     });
+    updatePrintSelectBar();
+  }
+
+  document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
+  document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
+    if(printSelectedIds.size === 0){ alert('1件も選ばれてないみゅ'); return; }
+    const groupId = printSelectGroupId;
+    const groups = getGroups();
+    const g = groups.find(x=>x.id===groupId);
+    const items = getSaved().filter(it => printSelectedIds.has(it.id));
+    showPrintFlyoutFromButton(ev.currentTarget, (mode)=>{
+      exitPrintSelectMode();
+      closeList();
+      openMultiPrint(items, mode, g ? g.name : '選択した項目');
+    });
+  };
+  function showPrintFlyoutFromButton(btnEl, onPick){
+    const r = btnEl.getBoundingClientRect();
+    showContextMenu(r.left, r.top - 8, printSubmenuOptions(onPick));
   }
 
   document.getElementById('btnNewGroup').onclick = ()=>{
