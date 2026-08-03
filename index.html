@@ -996,15 +996,23 @@
     const items = getSaved().filter(it => (it.group||null) === groupId);
     if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
     // 複数件まとめて印刷する時は先頭に一覧(チェックリスト)ページを付ける
-    const indexHtml = items.length > 1 ? buildChecklistHTML(groupName, items) : '';
+    const indexHtml = buildChecklistHTML(groupName, items);
     openPrintSheet(indexHtml + buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
   }
 
   // 選んだ項目だけをまとめて印刷する
   function openMultiPrint(items, mode, title){
     if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
-    const indexHtml = items.length > 1 ? buildChecklistHTML(title, items) : '';
+    const indexHtml = buildChecklistHTML(title, items);
     openPrintSheet(indexHtml + buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  }
+
+  function pruneEmptyGroups(){
+    const items = getSaved();
+    const groups = getGroups();
+    const usedIds = new Set(items.map(it => it.group).filter(Boolean));
+    const kept = groups.filter(g => usedIds.has(g.id));
+    if(kept.length !== groups.length) setGroups(kept);
   }
 
   // ---- 選んで印刷モード ----
@@ -1026,7 +1034,8 @@
     if(!bar) return;
     if(printSelectGroupId === null){ bar.style.display = 'none'; return; }
     bar.style.display = 'flex';
-    document.getElementById('printSelectCount').textContent = `選択中: ${printSelectedIds.size}件`;
+    const count = document.querySelectorAll('#savedList .print-select-box:checked').length;
+    document.getElementById('printSelectCount').textContent = `選択中: ${count}件`;
   }
 
   document.getElementById('printCancel').onclick = ()=>{
@@ -1493,6 +1502,7 @@
   }
 
   function renderList(){
+    pruneEmptyGroups();
     const items = getSaved();
     const groups = getGroups();
     const listEl = document.getElementById('savedList');
@@ -1602,11 +1612,13 @@
 
   document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
   document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
-    if(printSelectedIds.size === 0){ alert('1件も選ばれてないみゅ'); return; }
+    const checkedIds = Array.from(document.querySelectorAll('#savedList .print-select-box:checked'))
+      .map(cb => cb.closest('.saved-item').dataset.itemId);
+    if(checkedIds.length === 0){ alert('1件も選ばれてないみゅ'); return; }
     const groupId = printSelectGroupId;
     const groups = getGroups();
     const g = groups.find(x=>x.id===groupId);
-    const items = getSaved().filter(it => printSelectedIds.has(it.id));
+    const items = getSaved().filter(it => checkedIds.includes(it.id));
     showPrintFlyoutFromButton(ev.currentTarget, (mode)=>{
       exitPrintSelectMode();
       closeList();
