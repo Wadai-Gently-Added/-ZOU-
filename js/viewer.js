@@ -234,7 +234,7 @@ wrap.addEventListener('contextmenu', (ev)=>{
       const svgEl = stage.querySelector('svg');
       if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
       openSinglePrint(currentName, svgEl.outerHTML, mode);
-    })}
+    }, false)}
   ]);
 });
 

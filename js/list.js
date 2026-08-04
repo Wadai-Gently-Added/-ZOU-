@@ -382,7 +382,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     }});
     opts.push({ label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
       openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
-    })});
+    }, false)});
     opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
       const name = prompt('グループ名を入れてね', '新しいグループ');
       if(!name || !name.trim()) return;
