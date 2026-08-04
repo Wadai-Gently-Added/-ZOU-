@@ -382,7 +382,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     }});
     opts.push({ label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
       openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
-    }, false)});
+    })});
     opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
       const name = prompt('グループ名を入れてね', '新しいグループ');
       if(!name || !name.trim()) return;
@@ -486,7 +486,7 @@ function renderList(){
           { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
             closeList();
             openGroupPrint(g.id, g.name, mode);
-          }, items.filter(it => (it.group||null) === g.id).length > 1)},
+          })},
           { label: '☑️ 選んで印刷', onClick: ()=>{
             enterPrintSelectMode(g.id);
           }},
@@ -553,18 +553,18 @@ document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
       exitPrintSelectMode();
       closeList();
       openMultiPrint(items, mode, g ? g.name : '選択した項目');
-    }, items.length > 1);
+    });
   }catch(err){
     // 2回目以降でメニューが出ない不具合の原因特定用。直ったら消してOK
     alert('印刷メニューでエラーが起きたみゅ: ' + (err && err.message ? err.message : err));
     console.error('btnPrintSelectGo error', err);
   }
 };
-function showPrintFlyoutFromButton(btnEl, onPick, includeChecklist = true){
+function showPrintFlyoutFromButton(btnEl, onPick){
   // 直前に閉じ損なったメニューが残ってて新規作成を邪魔してないか念のため掃除
   closeContextMenu();
   const r = btnEl.getBoundingClientRect();
-  showContextMenu(r.left, r.top - 8, printSubmenuOptions(onPick, includeChecklist));
+  showContextMenu(r.left, r.top - 8, printSubmenuOptions(onPick));
 }
 
 document.getElementById('btnNewGroup').onclick = ()=>{
