@@ -1,21 +1,15 @@
-// js/print.js — 印刷プレビュー構築(SVG手順/コード一覧/チェックリスト)、選んで印刷モード
+// js/print.js — 印刷プレビュー構築、選んで印刷モード
 // 依存: js/storage.js (getSaved/getGroups)。list.jsから呼ばれる関数をここに定義。
 // list.js から参照されるグローバル: printSelectGroupId, printSelectedIds,
 //   enterPrintSelectMode(), exitPrintSelectMode(), updatePrintSelectBar(),
 //   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openMultiPrint()
 //
-// 【今回の変更点】
-// ① svgForThumbnail(): 単純なwidth/height:100%頼みだったのをやめ、ビューアのfitToView()と
-//    同じ「getBBoxで実際の描画範囲を測ってviewBoxを引き直す」方式に変更。viewBoxが無い/
-//    ズレているSVGでもはみ出さず自動リサイズされる。
-// ③ btnDoPrint/printCancel/printBackdrop: 選んで印刷の状態(printSelectGroupId等)が
-//    印刷シートを閉じても残ってしまうケースに備え、閉じるタイミングで確実にリセットするよう
-//    ガードを追加。iOSのwindow.print()を連続で呼ぶと反応しなくなる既知の挙動を避けるため、
-//    印刷実行前に軽い遅延(requestAnimationFrame)を挟む。
-// ④ printSubmenuOptions(): 3択(SVG/コード/SVG+コード)→
-//    「チェックリスト/SVG/コード/SVG+コード」の4択に変更。チェックリストは複数件印刷時に
-//    自動で混ぜるのをやめ、独立した選択肢にした(includeChecklist引数で単体印刷では非表示に)。
-//    さらに1件だけの印刷では、小さいフロー枠ではなく大きく見せる専用レイアウトを使う。
+// 【今回の設計変更】役割を完全に分離した
+// - グループ一括印刷 → チェックリスト(一覧)専用。SVG/コードの選択メニューはもう出さない。
+// - 選んで印刷(複数選択) → SVG+コードのセット。1件ずつ「個別表示」形式のページを連続で並べる
+//   (以前の「小さい枠を→で繋ぐフロー形式」は廃止)。
+// - 単品印刷(1件) → 「個別表示」形式そのもの(大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄)。
+// 選んで印刷と単品印刷は同じbuildSingleImageSection()を使うので見た目は完全に統一される。
 
 const printSheet = document.getElementById('printSheet');
 const printBackdrop = document.getElementById('printBackdrop');
@@ -67,30 +61,43 @@ function svgForThumbnail(code){
   return code;
 }
 
-// 複数件用: 折り紙の手順書のように「①SVG+ファイル名」を→でつないで並べる
-function buildFlowSection(items){
-  const cells = items.map((it, i)=>{
-    const nameEsc = escHtml(it.name || '(無題)');
-    return `
-      <div class="flow-step">
-        <div class="flow-num">${i+1}</div>
-        <div class="flow-svg">${svgForThumbnail(it.content)}</div>
-        <div class="flow-name">${nameEsc}</div>
-      </div>`;
-  });
-  const parts = [];
-  cells.forEach((c,i)=>{
-    parts.push(c);
-    if(i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
-  });
+// SVGコードから「サイズ」「ViewBox」の表示用テキストを取り出す
+function getSvgMeta(code){
+  try{
+    const tmp = document.createElement('div');
+    tmp.innerHTML = code;
+    const svgEl = tmp.querySelector('svg');
+    if(!svgEl) return { size: '-', viewBox: '-' };
+    const vb = svgEl.getAttribute('viewBox');
+    const vbParts = vb ? vb.trim().split(/\s+/) : null;
+    const w = svgEl.getAttribute('width') || (vbParts ? vbParts[2] : '-');
+    const h = svgEl.getAttribute('height') || (vbParts ? vbParts[3] : '-');
+    return { size: `${w} × ${h}`, viewBox: vb || '-' };
+  }catch(e){ return { size: '-', viewBox: '-' }; }
+}
+
+// 個別表示ページ(単品印刷/選んで印刷で共通利用): 大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄
+function buildSingleImageSection(item){
+  const nameEsc = escHtml(item.name || '(無題)');
+  const meta = getSvgMeta(item.content);
   return `
-    <div class="print-page flow-page">
-      <div class="print-title">SVG 手順</div>
-      <div class="flow-grid">${parts.join('')}</div>
+    <div class="print-page single-page">
+      <div class="print-title">${nameEsc}</div>
+      <div class="print-meta">作成日時: ${fmtDate(item.savedAt)}</div>
+      <div class="single-svg-frame">${svgForThumbnail(item.content)}</div>
+      <table class="code-list-table single-meta-table">
+        <tr><th>サイズ</th><td>${escHtml(meta.size)}</td></tr>
+        <tr><th>ViewBox</th><td>${escHtml(meta.viewBox)}</td></tr>
+      </table>
       <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
       <div class="print-note-box" contenteditable="true"></div>
     </div>
   `;
+}
+
+// 複数件を「個別表示ページ」の連続として並べる(1件でもそのまま使える)
+function buildIndividualPages(items){
+  return items.map(it => buildSingleImageSection(it)).join('');
 }
 
 // コードモード: ファイル名+作成日時+修正日時の一覧表 → その下に各コード
@@ -121,16 +128,15 @@ function buildCodeListSection(items){
 }
 
 // mode: 'image' | 'code' | 'both'  /  items: [{name, content, savedAt, modifiedAt}, ...]
-// 'checklist' は openGroupPrint/openMultiPrint 側で個別に処理するのでここには来ない
+// 単品印刷・選んで印刷の両方がこの関数を通る(件数に関わらず同じ個別表示ページを積む)
 function buildPrintOutput(items, mode){
   let html = '';
-  if(mode === 'image' || mode === 'both') html += buildFlowSection(items);
+  if(mode === 'image' || mode === 'both') html += buildIndividualPages(items);
   if(mode === 'code' || mode === 'both') html += buildCodeListSection(items);
   return html;
 }
 
 function printModeLabel(mode){
-  if(mode === 'checklist') return 'チェックリスト';
   return mode === 'image' ? 'SVG' : mode === 'code' ? 'コード' : 'SVG＋コード';
 }
 
@@ -143,9 +149,10 @@ function openPrintSheet(html, title){
   printSheet.classList.add('open'); printBackdrop.classList.add('open');
 }
 
+// 単品印刷・選んで印刷で共通の3択(SVG/コード/SVG+コード)。チェックリストはここには含めない
+// (チェックリストはグループ一括印刷専用の別ボタンとして独立させたため)
 function printSubmenuOptions(onPick){
   return [
-    { label: '☑️ チェックリスト印刷', onClick: ()=> onPick('checklist') },
     { label: '🖼 SVG印刷', onClick: ()=> onPick('image') },
     { label: '🔤 コード印刷', onClick: ()=> onPick('code') },
     { label: '🖼🔤 SVG＋コード印刷', onClick: ()=> onPick('both') }
@@ -160,10 +167,6 @@ function openSinglePrint(name, code, mode, meta){
     savedAt: (meta && meta.savedAt) || now,
     modifiedAt: (meta && meta.modifiedAt) || (meta && meta.savedAt) || now
   };
-  if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(name, [item]), `${name || '(無題)'}　チェックリスト`);
-    return;
-  }
   openPrintSheet(buildPrintOutput([item], mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
 }
 
@@ -188,23 +191,16 @@ function buildChecklistHTML(groupName, items){
     </div>`;
 }
 
-function openGroupPrint(groupId, groupName, mode){
+// グループ一括印刷 = チェックリスト専用(選択メニューは出さない)
+function openGroupPrint(groupId, groupName){
   const items = getSaved().filter(it => (it.group||null) === groupId);
   if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-  if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
-    return;
-  }
-  openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
 }
 
-// 選んだ項目だけをまとめて印刷する
+// 選んだ項目だけをまとめて印刷する(単品印刷と同じ個別表示ページを件数ぶん並べる)
 function openMultiPrint(items, mode, title){
   if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
-  if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(title, items), `${title || '選択した項目'}　チェックリスト（全${items.length}件）`);
-    return;
-  }
   openPrintSheet(buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
 }
 

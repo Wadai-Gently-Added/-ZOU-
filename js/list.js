@@ -483,11 +483,11 @@ function renderList(){
               g.color = color; setGroups(groups); renderList();
             });
           }},
-          { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+          { label: '☑️ チェックリスト印刷', onClick: ()=>{
             closeList();
-            openGroupPrint(g.id, g.name, mode);
-          })},
-          { label: '☑️ 選んで印刷', onClick: ()=>{
+            openGroupPrint(g.id, g.name);
+          }},
+          { label: '🖨 選んで印刷(SVG/コード)', onClick: ()=>{
             enterPrintSelectMode(g.id);
           }},
           { label: '🗑 グループ削除', onClick: ()=>{
