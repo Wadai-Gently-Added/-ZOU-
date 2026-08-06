@@ -488,6 +488,7 @@ function renderList(){
             openGroupPrint(g.id, g.name);
           }},
           { label: '🖨 選んで印刷(SVG/コード)', onClick: ()=>{
+            alert('デバッグ: 選んで印刷メニューのクリックは届いてるみゅ'); // ← 原因特定用。確認できたら消してOK
             enterPrintSelectMode(g.id);
           }},
           { label: '🗑 グループ削除', onClick: ()=>{
@@ -541,6 +542,7 @@ function renderList(){
 
 document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
 document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
+  alert('デバッグ: 印刷するボタンのクリックは届いてるみゅ'); // ← 原因特定用。確認できたら消してOK
   try{
     const checkedIds = Array.from(document.querySelectorAll('#savedList .print-select-box:checked'))
       .map(cb => cb.closest('.saved-item').dataset.itemId);
