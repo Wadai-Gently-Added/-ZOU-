@@ -282,6 +282,8 @@ input[type=file]{ display:none; }
 .flow-svg{ width:100%; height:100px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .flow-svg svg{ max-width:100%; max-height:100%; }
 .flow-name{ font-size:10px; color:#555; margin-top:4px; text-align:center; word-break:break-all; }
+.flow-group{ font-size:9px; color:#999; margin-top:1px; text-align:center; }
+.flow-grid-noarrow{ justify-content:flex-start; }
 .flow-arrow{ font-size:22px; color:#999; flex-shrink:0; }
 
 /* 個別表示ページ(単品印刷/選んで印刷で共通): 大きいSVGプレビュー + サイズ/ViewBox表 */

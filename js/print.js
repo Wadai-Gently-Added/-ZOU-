@@ -2,7 +2,7 @@
 // 依存: js/storage.js (getSaved/getGroups)。list.jsから呼ばれる関数をここに定義。
 // list.js から参照されるグローバル: printSelectActive, printSelectedIds,
 //   enterPrintSelectMode(), exitPrintSelectMode(), updatePrintSelectBar(),
-//   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openMultiPrint()
+//   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openGroupChecklist(), openMultiPrint()
 //
 // 【今回の設計】
 // - グループ一括印刷 → チェックリスト(一覧)専用。
@@ -76,26 +76,38 @@ function getSvgMeta(code){
   }catch(e){ return { size: '-', viewBox: '-' }; }
 }
 
+// 複数グループから抜粋した時に「どのグループの項目か」が分かるよう名前を引く
+function getGroupNameOf(item){
+  if(!item.group) return null;
+  const g = getGroups().find(x => x.id === item.group);
+  return g ? g.name : null;
+}
+
 // 複数件用: 折り紙の手順書のように「①SVG+ファイル名」を→でつないで並べる
-function buildFlowSection(items){
+// withArrows=false にすると矢印を挟まない、ただの一覧(グリッド)として出力できる
+function buildFlowSection(items, withArrows){
   const cells = items.map((it, i)=>{
     const nameEsc = escHtml(it.name || '(無題)');
+    const groupName = getGroupNameOf(it);
+    const groupLine = groupName ? `<div class="flow-group">${escHtml(groupName)}</div>` : '';
     return `
       <div class="flow-step">
         <div class="flow-num">${i+1}</div>
         <div class="flow-svg">${svgForThumbnail(it.content)}</div>
         <div class="flow-name">${nameEsc}</div>
+        ${groupLine}
       </div>`;
   });
   const parts = [];
   cells.forEach((c,i)=>{
     parts.push(c);
-    if(i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
+    if(withArrows && i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
   });
+  const titleText = withArrows ? 'SVG 手順' : 'SVG 一覧';
   return `
     <div class="print-page flow-page">
-      <div class="print-title">SVG 手順</div>
-      <div class="flow-grid">${parts.join('')}</div>
+      <div class="print-title">${titleText}</div>
+      <div class="flow-grid${withArrows ? '' : ' flow-grid-noarrow'}">${parts.join('')}</div>
       <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
       <div class="print-note-box" contenteditable="true"></div>
     </div>
@@ -106,9 +118,11 @@ function buildFlowSection(items){
 function buildSingleImageSection(item){
   const nameEsc = escHtml(item.name || '(無題)');
   const meta = getSvgMeta(item.content);
+  const groupName = getGroupNameOf(item);
   return `
     <div class="print-page single-page">
       <div class="print-title">${nameEsc}</div>
+      ${groupName ? `<div class="print-meta">グループ: ${escHtml(groupName)}</div>` : ''}
       <div class="print-meta">作成日時: ${fmtDate(item.savedAt)}</div>
       <div class="single-svg-frame">${svgForThumbnail(item.content)}</div>
       <table class="code-list-table single-meta-table">
@@ -121,11 +135,12 @@ function buildSingleImageSection(item){
   `;
 }
 
-// コードモード: ファイル名+作成日時+修正日時の一覧表 → その下に各コード
+// コードモード: ファイル名+グループ+作成日時+修正日時の一覧表 → その下に各コード
 function buildCodeListSection(items){
   const rows = items.map((it,i)=>{
     const nameEsc = escHtml(it.name || '(無題)');
-    return `<tr><td>${i+1}</td><td>${nameEsc}</td><td>${fmtDate(it.savedAt)}</td><td>${fmtDate(it.modifiedAt || it.savedAt)}</td></tr>`;
+    const groupName = getGroupNameOf(it);
+    return `<tr><td>${i+1}</td><td>${nameEsc}</td><td>${groupName ? escHtml(groupName) : '-'}</td><td>${fmtDate(it.savedAt)}</td><td>${fmtDate(it.modifiedAt || it.savedAt)}</td></tr>`;
   }).join('');
   const entries = items.map((it,i)=>{
     const nameEsc = escHtml(it.name || '(無題)');
@@ -140,7 +155,7 @@ function buildCodeListSection(items){
     <div class="print-page">
       <div class="print-title">SVG コード一覧</div>
       <table class="code-list-table">
-        <thead><tr><th>#</th><th>ファイル名</th><th>作成日時</th><th>修正日時</th></tr></thead>
+        <thead><tr><th>#</th><th>ファイル名</th><th>グループ</th><th>作成日時</th><th>修正日時</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       ${entries}
@@ -148,19 +163,23 @@ function buildCodeListSection(items){
   `;
 }
 
-// mode: 'image' | 'code' | 'both'  /  items: [{name, content, savedAt, modifiedAt}, ...]
-// 画像は「1件だけなら個別表示、複数件なら折り紙フロー形式」で自動的に出し分ける
+// mode: 'image'(矢印あり手順) | 'image-grid'(矢印なし一覧) | 'code' | 'both'
+// items: [{name, content, savedAt, modifiedAt}, ...]
+// 画像は「1件だけなら個別表示、複数件ならフロー形式(矢印の有無はmodeで指定)」で自動的に出し分ける
 function buildPrintOutput(items, mode){
   let html = '';
-  if(mode === 'image' || mode === 'both'){
-    html += (items.length === 1) ? buildSingleImageSection(items[0]) : buildFlowSection(items);
+  if(mode === 'image' || mode === 'image-grid' || mode === 'both'){
+    html += (items.length === 1) ? buildSingleImageSection(items[0]) : buildFlowSection(items, mode !== 'image-grid');
   }
   if(mode === 'code' || mode === 'both') html += buildCodeListSection(items);
   return html;
 }
 
 function printModeLabel(mode){
-  return mode === 'image' ? 'SVG' : mode === 'code' ? 'コード' : 'SVG＋コード';
+  if(mode === 'image') return 'SVG手順';
+  if(mode === 'image-grid') return 'SVG一覧';
+  if(mode === 'code') return 'コード';
+  return 'SVG＋コード';
 }
 
 function openPrintSheet(html, title){
@@ -173,11 +192,12 @@ function openPrintSheet(html, title){
   printSheet.classList.add('open'); printBackdrop.classList.add('open');
 }
 
-// 単品印刷・選んで印刷で共通の3択(SVG/コード/SVG+コード)。チェックリストはここには含めない
+// 単品印刷・選んで印刷・グループ一括印刷で共通の4択。チェックリストはここには含めない
 // (チェックリストはグループ一括印刷専用の別ボタンとして独立させたため)
 function printSubmenuOptions(onPick){
   return [
-    { label: '🖼 SVG印刷', onClick: ()=> onPick('image') },
+    { label: '🖼 SVG印刷(手順・矢印あり)', onClick: ()=> onPick('image') },
+    { label: '📋 SVG一覧印刷(矢印なし)', onClick: ()=> onPick('image-grid') },
     { label: '🔤 コード印刷', onClick: ()=> onPick('code') },
     { label: '🖼🔤 SVG＋コード印刷', onClick: ()=> onPick('both') }
   ];
@@ -215,11 +235,18 @@ function buildChecklistHTML(groupName, items){
     </div>`;
 }
 
-// グループ一括印刷 = チェックリスト専用(選択メニューは出さない)
-function openGroupPrint(groupId, groupName){
+// グループのチェックリスト(一覧)だけを印刷
+function openGroupChecklist(groupId, groupName){
   const items = getSaved().filter(it => (it.group||null) === groupId);
   if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
   openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
+}
+
+// グループの中身をSVG/コードとしてまとめて印刷(フロー形式 or 矢印なし一覧 or コード)
+function openGroupPrint(groupId, groupName, mode){
+  const items = getSaved().filter(it => (it.group||null) === groupId);
+  if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
+  openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
 }
 
 // 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)

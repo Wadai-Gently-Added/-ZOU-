@@ -485,8 +485,12 @@ function renderList(){
           }},
           { label: '☑️ チェックリスト印刷', onClick: ()=>{
             closeList();
-            openGroupPrint(g.id, g.name);
+            openGroupChecklist(g.id, g.name);
           }},
+          { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+            closeList();
+            openGroupPrint(g.id, g.name, mode);
+          })},
           { label: '🗑 グループ削除', onClick: ()=>{
             if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
             const cur = getSaved();
@@ -539,10 +543,12 @@ function renderList(){
 document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
 document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
   try{
-    const checkedIds = Array.from(document.querySelectorAll('#savedList .print-select-box:checked'))
-      .map(cb => cb.closest('.saved-item').dataset.itemId);
-    if(checkedIds.length === 0){ alert('1件も選ばれてないみゅ'); return; }
-    const items = getSaved().filter(it => checkedIds.includes(it.id));
+    if(printSelectedIds.size === 0){ alert('1件も選ばれてないみゅ'); return; }
+    // printSelectedIds はSetなので挿入順=チェックした順を保っている。
+    // 印刷順もチェックした順にしたいので、この順のままitemsを組み立てる
+    const byId = {};
+    getSaved().forEach(it => byId[it.id] = it);
+    const items = Array.from(printSelectedIds).map(id => byId[id]).filter(Boolean);
     showPrintFlyoutFromButton(ev.currentTarget, (mode)=>{
       exitPrintSelectMode();
       closeList();
