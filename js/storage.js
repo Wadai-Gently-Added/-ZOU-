@@ -68,3 +68,11 @@ function pruneEmptyGroups(){
   const kept = groups.filter(g => usedIds.has(g.id));
   if(kept.length !== groups.length) setGroups(kept);
 }
+
+// 複数のシート(貼り付け/マイSVG/コード編集/印刷)が同時に「open」状態のまま残ると、
+// 後からDOMに現れる方が透明に重なってクリックを吸い取ってしまうことがあるため、
+// 新しいシートを開く前に必ず全部閉じておく(選んで印刷が無反応になる不具合の対策)
+function closeAllSheets(){
+  document.querySelectorAll('.sheet.open').forEach(s => s.classList.remove('open'));
+  document.querySelectorAll('.sheet-backdrop.open').forEach(b => b.classList.remove('open'));
+}

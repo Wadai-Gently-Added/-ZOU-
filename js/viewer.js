@@ -169,7 +169,7 @@ document.getElementById('btnClipboard').onclick = async ()=>{
 /* ---- paste sheet ---- */
 const pasteSheet = document.getElementById('pasteSheet');
 const pasteBackdrop = document.getElementById('pasteBackdrop');
-function openPaste(){ pasteSheet.classList.add('open'); pasteBackdrop.classList.add('open'); }
+function openPaste(){ closeAllSheets(); pasteSheet.classList.add('open'); pasteBackdrop.classList.add('open'); }
 function closePaste(){ pasteSheet.classList.remove('open'); pasteBackdrop.classList.remove('open'); }
 document.getElementById('btnPaste').onclick = openPaste;
 document.getElementById('pasteCancel').onclick = closePaste;
@@ -346,6 +346,7 @@ const codeSheet = document.getElementById('codeSheet');
 const codeBackdrop = document.getElementById('codeBackdrop');
 const codeBox = document.getElementById('codeBox');
 function openCode(){
+  closeAllSheets();
   const svgEl = stage.querySelector('svg');
   codeBox.value = svgEl ? svgEl.outerHTML : '';
   codeSheet.classList.add('open'); codeBackdrop.classList.add('open');

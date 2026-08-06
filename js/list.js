@@ -578,7 +578,7 @@ document.getElementById('btnNewGroup').onclick = ()=>{
   });
 };
 
-function openList(){ renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
+function openList(){ closeAllSheets(); renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
 function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
 document.getElementById('listBtn').onclick = openList;
 document.getElementById('listCancel').onclick = closeList;

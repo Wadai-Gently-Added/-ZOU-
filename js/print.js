@@ -141,6 +141,7 @@ function printModeLabel(mode){
 }
 
 function openPrintSheet(html, title){
+  closeAllSheets();
   document.getElementById('printArea').innerHTML = html;
   document.getElementById('printSheetTitle').textContent = title || '印刷プレビュー';
   const area = document.getElementById('printArea');
