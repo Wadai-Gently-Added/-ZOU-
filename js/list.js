@@ -320,7 +320,7 @@ function buildItemRow(item, i, groups, isTopLevel){
   row.dataset.itemId = item.id;
   row.dataset.group = item.group || '';
   const d = new Date(item.savedAt);
-  const inSelectMode = (printSelectGroupId !== null) && ((item.group||null) === printSelectGroupId);
+  const inSelectMode = printSelectActive;
   const handleHtml = inSelectMode
     ? `<input type="checkbox" class="print-select-box" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
     : '<span class="handle" title="ドラッグで並べ替え / 別グループへ移動">⠿</span>';
@@ -487,10 +487,6 @@ function renderList(){
             closeList();
             openGroupPrint(g.id, g.name);
           }},
-          { label: '🖨 選んで印刷(SVG/コード)', onClick: ()=>{
-            alert('デバッグ: 選んで印刷メニューのクリックは届いてるみゅ'); // ← 原因特定用。確認できたら消してOK
-            enterPrintSelectMode(g.id);
-          }},
           { label: '🗑 グループ削除', onClick: ()=>{
             if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
             const cur = getSaved();
@@ -542,22 +538,17 @@ function renderList(){
 
 document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
 document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
-  alert('デバッグ: 印刷するボタンのクリックは届いてるみゅ'); // ← 原因特定用。確認できたら消してOK
   try{
     const checkedIds = Array.from(document.querySelectorAll('#savedList .print-select-box:checked'))
       .map(cb => cb.closest('.saved-item').dataset.itemId);
     if(checkedIds.length === 0){ alert('1件も選ばれてないみゅ'); return; }
-    const groupId = printSelectGroupId;
-    const groups = getGroups();
-    const g = groups.find(x=>x.id===groupId);
     const items = getSaved().filter(it => checkedIds.includes(it.id));
     showPrintFlyoutFromButton(ev.currentTarget, (mode)=>{
       exitPrintSelectMode();
       closeList();
-      openMultiPrint(items, mode, g ? g.name : '選択した項目');
+      openMultiPrint(items, mode, '選択した項目');
     });
   }catch(err){
-    // 2回目以降でメニューが出ない不具合の原因特定用。直ったら消してOK
     alert('印刷メニューでエラーが起きたみゅ: ' + (err && err.message ? err.message : err));
     console.error('btnPrintSelectGo error', err);
   }
@@ -578,6 +569,10 @@ document.getElementById('btnNewGroup').onclick = ()=>{
     setGroups(groups);
     renderList();
   });
+};
+document.getElementById('btnStartSelectPrint').onclick = ()=>{
+  if(printSelectActive){ exitPrintSelectMode(); }
+  else{ enterPrintSelectMode(); }
 };
 
 function openList(){ closeAllSheets(); renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }

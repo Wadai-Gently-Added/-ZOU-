@@ -1,15 +1,15 @@
 // js/print.js — 印刷プレビュー構築、選んで印刷モード
 // 依存: js/storage.js (getSaved/getGroups)。list.jsから呼ばれる関数をここに定義。
-// list.js から参照されるグローバル: printSelectGroupId, printSelectedIds,
+// list.js から参照されるグローバル: printSelectActive, printSelectedIds,
 //   enterPrintSelectMode(), exitPrintSelectMode(), updatePrintSelectBar(),
 //   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openMultiPrint()
 //
-// 【今回の設計変更】役割を完全に分離した
-// - グループ一括印刷 → チェックリスト(一覧)専用。SVG/コードの選択メニューはもう出さない。
-// - 選んで印刷(複数選択) → SVG+コードのセット。1件ずつ「個別表示」形式のページを連続で並べる
-//   (以前の「小さい枠を→で繋ぐフロー形式」は廃止)。
-// - 単品印刷(1件) → 「個別表示」形式そのもの(大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄)。
-// 選んで印刷と単品印刷は同じbuildSingleImageSection()を使うので見た目は完全に統一される。
+// 【今回の設計】
+// - グループ一括印刷 → チェックリスト(一覧)専用。
+// - 選んで印刷(複数選択) → グループを跨いで好きな項目にチェックを付けられる「全体選択モード」。
+//   画像は折り紙の手順書のような番号+矢印でつなぐフロー形式(buildFlowSection、以前廃止したが復活)。
+// - 単品印刷(1件) → 大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄(buildSingleImageSection)。
+// 画像レイアウトは「1件だけなら個別表示、複数件ならフロー形式」で自動的に出し分ける。
 
 const printSheet = document.getElementById('printSheet');
 const printBackdrop = document.getElementById('printBackdrop');
@@ -76,7 +76,33 @@ function getSvgMeta(code){
   }catch(e){ return { size: '-', viewBox: '-' }; }
 }
 
-// 個別表示ページ(単品印刷/選んで印刷で共通利用): 大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄
+// 複数件用: 折り紙の手順書のように「①SVG+ファイル名」を→でつないで並べる
+function buildFlowSection(items){
+  const cells = items.map((it, i)=>{
+    const nameEsc = escHtml(it.name || '(無題)');
+    return `
+      <div class="flow-step">
+        <div class="flow-num">${i+1}</div>
+        <div class="flow-svg">${svgForThumbnail(it.content)}</div>
+        <div class="flow-name">${nameEsc}</div>
+      </div>`;
+  });
+  const parts = [];
+  cells.forEach((c,i)=>{
+    parts.push(c);
+    if(i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
+  });
+  return `
+    <div class="print-page flow-page">
+      <div class="print-title">SVG 手順</div>
+      <div class="flow-grid">${parts.join('')}</div>
+      <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
+      <div class="print-note-box" contenteditable="true"></div>
+    </div>
+  `;
+}
+
+// 単品印刷用: 大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄
 function buildSingleImageSection(item){
   const nameEsc = escHtml(item.name || '(無題)');
   const meta = getSvgMeta(item.content);
@@ -93,11 +119,6 @@ function buildSingleImageSection(item){
       <div class="print-note-box" contenteditable="true"></div>
     </div>
   `;
-}
-
-// 複数件を「個別表示ページ」の連続として並べる(1件でもそのまま使える)
-function buildIndividualPages(items){
-  return items.map(it => buildSingleImageSection(it)).join('');
 }
 
 // コードモード: ファイル名+作成日時+修正日時の一覧表 → その下に各コード
@@ -128,10 +149,12 @@ function buildCodeListSection(items){
 }
 
 // mode: 'image' | 'code' | 'both'  /  items: [{name, content, savedAt, modifiedAt}, ...]
-// 単品印刷・選んで印刷の両方がこの関数を通る(件数に関わらず同じ個別表示ページを積む)
+// 画像は「1件だけなら個別表示、複数件なら折り紙フロー形式」で自動的に出し分ける
 function buildPrintOutput(items, mode){
   let html = '';
-  if(mode === 'image' || mode === 'both') html += buildIndividualPages(items);
+  if(mode === 'image' || mode === 'both'){
+    html += (items.length === 1) ? buildSingleImageSection(items[0]) : buildFlowSection(items);
+  }
   if(mode === 'code' || mode === 'both') html += buildCodeListSection(items);
   return html;
 }
@@ -199,35 +222,42 @@ function openGroupPrint(groupId, groupName){
   openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
 }
 
-// 選んだ項目だけをまとめて印刷する(単品印刷と同じ個別表示ページを件数ぶん並べる)
+// 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)
 function openMultiPrint(items, mode, title){
   if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
   openPrintSheet(buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
 }
 
 // ---- 選んで印刷モード ----
-let printSelectGroupId = null;
+// グループに縛られない全体選択モード。オンのあいだは全アイテムにチェックボックスが出て、
+// 違うグループ同士から抜粋して1回の印刷にまとめられる。
+let printSelectActive = false;
 const printSelectedIds = new Set();
 
-function enterPrintSelectMode(groupId){
-  printSelectGroupId = groupId;
+function enterPrintSelectMode(){
+  printSelectActive = true;
   printSelectedIds.clear();
-  // 折りたたまれたグループのまま選択モードに入るとチェックボックスが
-  // 見えなくて押せなくなるので、対象グループを強制的に展開する
+  // 折りたたまれたグループの中身が見えないとチェックできないので、全グループを強制展開する
   const groups = getGroups();
-  const g = groups.find(x => x.id === groupId);
-  if(g && g.collapsed){ g.collapsed = false; setGroups(groups); }
+  let changed = false;
+  groups.forEach(g=>{ if(g.collapsed){ g.collapsed = false; changed = true; } });
+  if(changed) setGroups(groups);
   renderList();
 }
 function exitPrintSelectMode(){
-  printSelectGroupId = null;
+  printSelectActive = false;
   printSelectedIds.clear();
   renderList();
 }
 function updatePrintSelectBar(){
   const bar = document.getElementById('printSelectBar');
+  const startBtn = document.getElementById('btnStartSelectPrint');
+  if(startBtn){
+    startBtn.textContent = printSelectActive ? '✕ 選択をやめる' : '☑️ 選んで印刷';
+    startBtn.classList.toggle('active', printSelectActive);
+  }
   if(!bar) return;
-  if(printSelectGroupId === null){ bar.style.display = 'none'; return; }
+  if(!printSelectActive){ bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   const count = document.querySelectorAll('#savedList .print-select-box:checked').length;
   document.getElementById('printSelectCount').textContent = `選択中: ${count}件`;
@@ -237,7 +267,7 @@ function closePrintSheet(){
   printSheet.classList.remove('open'); printBackdrop.classList.remove('open');
   // 選んで印刷モードのまま印刷シートだけ閉じて放置されるケースを防ぐため、
   // 念のためここでも状態を確実にクリアしておく(2回目に反応しなくなる不具合の保険)
-  if(printSelectGroupId !== null){ exitPrintSelectMode(); }
+  if(printSelectActive){ exitPrintSelectMode(); }
 }
 document.getElementById('printCancel').onclick = closePrintSheet;
 printBackdrop.onclick = closePrintSheet;
@@ -257,5 +287,5 @@ document.getElementById('btnDoPrint').onclick = ()=>{
 };
 // 印刷ダイアログが閉じたあとに古い印刷内容が残らないよう、印刷完了後も一応リセットしておく
 window.addEventListener('afterprint', ()=>{
-  if(printSelectGroupId !== null) exitPrintSelectMode();
+  if(printSelectActive) exitPrintSelectMode();
 });
