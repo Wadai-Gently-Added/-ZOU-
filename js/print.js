@@ -2,7 +2,7 @@
 // 依存: js/storage.js (getSaved/getGroups)。list.jsから呼ばれる関数をここに定義。
 // list.js から参照されるグローバル: printSelectActive, printSelectedIds,
 //   enterPrintSelectMode(), exitPrintSelectMode(), updatePrintSelectBar(),
-//   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openGroupChecklist(), openMultiPrint()
+//   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openMultiPrint()
 //
 // 【今回の設計】
 // - グループ一括印刷 → チェックリスト(一覧)専用。
@@ -192,10 +192,10 @@ function openPrintSheet(html, title){
   printSheet.classList.add('open'); printBackdrop.classList.add('open');
 }
 
-// 単品印刷・選んで印刷・グループ一括印刷で共通の4択。チェックリストはここには含めない
-// (チェックリストはグループ一括印刷専用の別ボタンとして独立させたため)
+// 単品印刷・選んで印刷・グループ一括印刷で共通の5択(チェックリストも含めて1つのメニューに統合)
 function printSubmenuOptions(onPick){
   return [
+    { label: '☑️ チェックリスト印刷', onClick: ()=> onPick('checklist') },
     { label: '🖼 SVG印刷(手順・矢印あり)', onClick: ()=> onPick('image') },
     { label: '📋 SVG一覧印刷(矢印なし)', onClick: ()=> onPick('image-grid') },
     { label: '🔤 コード印刷', onClick: ()=> onPick('code') },
@@ -211,6 +211,10 @@ function openSinglePrint(name, code, mode, meta){
     savedAt: (meta && meta.savedAt) || now,
     modifiedAt: (meta && meta.modifiedAt) || (meta && meta.savedAt) || now
   };
+  if(mode === 'checklist'){
+    openPrintSheet(buildChecklistHTML(name, [item]), `${name || '(無題)'}　チェックリスト`);
+    return;
+  }
   openPrintSheet(buildPrintOutput([item], mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
 }
 
@@ -235,23 +239,24 @@ function buildChecklistHTML(groupName, items){
     </div>`;
 }
 
-// グループのチェックリスト(一覧)だけを印刷
-function openGroupChecklist(groupId, groupName){
-  const items = getSaved().filter(it => (it.group||null) === groupId);
-  if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
-  openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
-}
-
-// グループの中身をSVG/コードとしてまとめて印刷(フロー形式 or 矢印なし一覧 or コード)
+// グループの中身を印刷(チェックリスト/SVG/コード、5択共通のprintSubmenuOptionsから呼ばれる)
 function openGroupPrint(groupId, groupName, mode){
   const items = getSaved().filter(it => (it.group||null) === groupId);
   if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
+  if(mode === 'checklist'){
+    openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
+    return;
+  }
   openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
 }
 
 // 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)
 function openMultiPrint(items, mode, title){
   if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
+  if(mode === 'checklist'){
+    openPrintSheet(buildChecklistHTML(title, items), `${title || '選択した項目'}　チェックリスト（全${items.length}件）`);
+    return;
+  }
   openPrintSheet(buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
 }
 

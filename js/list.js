@@ -383,6 +383,9 @@ function buildItemRow(item, i, groups, isTopLevel){
     opts.push({ label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
       openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
     })});
+    opts.push({ label: '☑️ 選んで印刷', onClick: ()=>{
+      enterPrintSelectMode();
+    }});
     opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
       const name = prompt('グループ名を入れてね', '新しいグループ');
       if(!name || !name.trim()) return;
@@ -483,14 +486,13 @@ function renderList(){
               g.color = color; setGroups(groups); renderList();
             });
           }},
-          { label: '☑️ チェックリスト印刷', onClick: ()=>{
-            closeList();
-            openGroupChecklist(g.id, g.name);
-          }},
           { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
             closeList();
             openGroupPrint(g.id, g.name, mode);
           })},
+          { label: '☑️ 選んで印刷', onClick: ()=>{
+            enterPrintSelectMode();
+          }},
           { label: '🗑 グループ削除', onClick: ()=>{
             if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
             const cur = getSaved();
