@@ -44,4 +44,8 @@ function switchMode(mode){
 document.getElementById('tabSvg').onclick = ()=> switchMode('svg');
 document.getElementById('tabHtml').onclick = ()=> switchMode('html');
 
+const langSelect = document.getElementById('langSelect');
+langSelect.value = currentLanguage;
+langSelect.onchange = ()=> setLanguage(langSelect.value);
+
 applyModeLabels();

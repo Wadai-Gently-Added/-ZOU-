@@ -1,0 +1,70 @@
+// language/en.js — English text data
+// Depends on: nothing. Load before js/strings.js (see load order in index.html).
+// To add a new language: copy this file to language/xx.js, translate every value,
+// then register it in the LANGUAGES map in js/strings.js.
+
+const LANG_EN = {
+  common: {
+    saveFailed: 'Save failed (storage may be full)',
+    saveSuccess: 'Saved!',
+    noSelection: 'No items selected',
+    printMenuError: (msg)=> `An error occurred in the print menu: ${msg}`,
+    printStartFailed: 'Could not start printing. Please try again',
+    wakeLockFailed: 'Could not enable Keep Awake',
+    codeEmpty: 'Code is empty',
+    clipboardReadFailed: 'Could not read the clipboard. Safari may require permission in Settings. Please paste manually using the "Paste" button',
+    unsavedPromptHtml: 'The content currently shown has not been saved.<br>What would you like to do?',
+    unsavedSaveThenOpen: 'Save then open',
+    unsavedOpenWithoutSave: 'Open without saving',
+    cancel: 'Cancel',
+    savePrompt: 'Enter a name to save as',
+    downloadNamePrompt: 'Enter a file name (the extension is added automatically)',
+    itemRenamePrompt: 'Rename',
+    groupNamePrompt: 'Enter a group name',
+    groupRenamePrompt: 'Rename group',
+    groupColorPickTitle: 'Choose a group color',
+    newGroupDefaultName: 'New Group',
+    itemDeleteConfirm: (name)=> `Delete "${name}"? This cannot be undone`,
+    groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`
+  },
+  svg: {
+    appTitle: 'SVG VIEWER',
+    listBtn: '📂 My SVGs',
+    listSheetTitle: 'My SVGs',
+    pasteSheetTitle: 'Paste SVG code',
+    pasteBoxPlaceholder: 'Paste <svg>...</svg> here',
+    codeSheetTitle: 'Edit SVG code',
+    codeBoxPlaceholder: 'No SVG currently shown',
+    emptyBig: 'No SVG loaded yet',
+    savedEmpty: 'Nothing saved yet',
+    fileAccept: '.svg,image/svg+xml',
+    registerMenu: '＋ Save to My SVGs',
+    downloadMenu: '📥 Save SVG file',
+    parseError: 'Could not load this as SVG. Please check that the content is valid SVG code (HTML or other text cannot be loaded)',
+    noGroupItems: 'This group has no SVGs',
+    noStageContent: 'Nothing is currently shown',
+    noSaveContent: 'Nothing to save',
+    defaultExportName: 'svg-export',
+    groupItemsNoun: 'SVG'
+  },
+  html: {
+    appTitle: 'HTML VIEWER',
+    listBtn: '📂 My HTML',
+    listSheetTitle: 'My HTML',
+    pasteSheetTitle: 'Paste HTML code',
+    pasteBoxPlaceholder: 'Paste <html>...</html> here',
+    codeSheetTitle: 'Edit HTML code',
+    codeBoxPlaceholder: 'No HTML currently shown',
+    emptyBig: 'No HTML loaded yet',
+    savedEmpty: 'Nothing saved yet',
+    fileAccept: '.html,.htm,text/html',
+    registerMenu: '＋ Save to My HTML',
+    downloadMenu: '📥 Save HTML file',
+    parseError: 'Could not load this as HTML. The content appears to be empty',
+    noGroupItems: 'This group has no HTML items',
+    noStageContent: 'Nothing is currently shown',
+    noSaveContent: 'Nothing to save',
+    defaultExportName: 'html-export',
+    groupItemsNoun: 'HTML'
+  }
+};
