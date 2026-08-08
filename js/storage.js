@@ -1,5 +1,6 @@
 // js/storage.js — データ保存層 (localStorageの読み書き, グループ/並び順の管理)
-// 依存: なし。他の全js(viewer.js/list.js/print.js/mode.js)より先に読み込むこと。
+// 依存: なし。ただしalert文言はjs/strings.js(STR)を参照するため、そちらも読み込んでおくこと
+// (関数呼び出し時点で読み込み済みなら順序は問われない)。他の全js(viewer.js/list.js/print.js/mode.js)より先に読み込むこと。
 // currentMode('svg'|'html')によって保存先キーを切り替える。SVGとHTMLはマイSVG/マイHTMLとして
 // 完全に別のデータとして保存され、混ざらない。mode.jsがcurrentModeを切り替える。
 
@@ -61,7 +62,7 @@ function getSaved(){
 }
 function setSaved(arr){
   try{ localStorage.setItem(storeKey(), JSON.stringify(arr)); }
-  catch(e){ alert('保存に失敗しました（容量オーバーの可能性があります）'); }
+  catch(e){ alert(STR.common.saveFailed); }
 }
 
 function pruneEmptyGroups(){

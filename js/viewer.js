@@ -1,5 +1,5 @@
 // js/viewer.js — SVG/HTML表示(ズーム/パン)、読込、コード編集、単体保存/ダウンロード、スリープ防止、全体表示
-// 依存: js/storage.js (getSaved/setSaved, currentMode)。list.js/print.jsより先に読み込むこと。
+// 依存: js/storage.js (getSaved/setSaved, currentMode), js/strings.js (STR)。list.js/print.jsより先に読み込むこと。
 // list.js/print.js から参照されるグローバル: stage, wrap, currentName, isDirty,
 //   loadContent(), guardedLoad(), fitToView(), showContextMenu()(list.jsで定義, ここから呼ぶ)
 
@@ -71,7 +71,7 @@ function extractSvgElement(text){
 function loadSvgContent(text, name){
   const svgSource = extractSvgElement(text);
   if(!svgSource){
-    alert('SVGとして読み込めませんでした。中身がSVGコードか確認してください（HTMLや他のテキストは読み込めません）');
+    alert(STR.svg.parseError);
     return;
   }
   stage.innerHTML = '';
@@ -94,7 +94,7 @@ function loadSvgContent(text, name){
 // (ユーザー自身が作った/持ち込んだHTMLを信頼する前提。スクリプトも実行される)
 function loadHtmlContent(text, name){
   if(!text || !text.trim()){
-    alert('HTMLとして読み込めませんでした。中身が空のようです');
+    alert(STR.html.parseError);
     return;
   }
   stage.innerHTML = '';
@@ -196,7 +196,7 @@ document.getElementById('btnClipboard').onclick = async ()=>{
     const text = await navigator.clipboard.readText();
     guardedLoad(()=>{ loadContent(text, 'クリップボードから'); isDirty = true; });
   }catch(err){
-    alert('クリップボードを読み取れませんでした。Safariの設定で許可が必要な場合があります。「貼り付け」ボタンから手動で貼ってください');
+    alert(STR.common.clipboardReadFailed);
   }
 };
 
@@ -240,7 +240,7 @@ function currentContentString(){
 
 /* ---- save current ---- */
 function saveCurrent(){
-  if(!hasStageContent()){ alert('保存する内容がありません'); return false; }
+  if(!hasStageContent()){ alert(STR.mode().noSaveContent); return false; }
   const arr = getSaved();
   let suggested = currentName || ((currentMode === 'html' ? 'HTML ' : 'SVG ') + new Date().toLocaleString('ja-JP'));
   const base = suggested.replace(/\s*\(\d+\)\s*$/, '');
@@ -255,7 +255,7 @@ function saveCurrent(){
     const next = Math.max(...existingNums) + 1;
     suggested = base + '(' + next + ')';
   }
-  const name = prompt('保存名を入れてね', suggested);
+  const name = prompt(STR.common.savePrompt, suggested);
   if(name === null) return false;
   const now = new Date().toISOString();
   arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: currentContentString(), savedAt: now, modifiedAt: now, pinned:false, group:null });
@@ -265,20 +265,20 @@ function saveCurrent(){
 }
 
 document.getElementById('btnSave').onclick = ()=>{
-  if(saveCurrent()) alert('保存しました！');
+  if(saveCurrent()) alert(STR.common.saveSuccess);
 };
 
 wrap.addEventListener('contextmenu', (ev)=>{
   if(!hasStageContent()) return;
   ev.preventDefault();
   showContextMenu(ev.clientX, ev.clientY, [
-    { label: currentMode === 'html' ? '＋ マイHTMLに登録' : '＋ マイSVGに登録', onClick: ()=>{
-      if(saveCurrent()) alert('保存しました！');
+    { label: STR.mode().registerMenu, onClick: ()=>{
+      if(saveCurrent()) alert(STR.common.saveSuccess);
     }},
-    { label: currentMode === 'html' ? '📥 HTMLファイル保存' : '📥 SVGファイル保存', onClick: downloadCurrentFile },
+    { label: STR.mode().downloadMenu, onClick: downloadCurrentFile },
     { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
       const content = currentContentString();
-      if(!content){ alert('表示中の内容がありません'); return; }
+      if(!content){ alert(STR.mode().noStageContent); return; }
       openSinglePrint(currentName, content, mode);
     })}
   ]);
@@ -290,11 +290,11 @@ function showUnsavedPrompt(onProceed){
   backdrop.className = 'color-pick-backdrop';
   const panel = document.createElement('div');
   panel.className = 'color-pick-panel';
-  panel.innerHTML = `<div class="color-pick-title">今表示中の内容が保存されていません。<br>どうしますか？</div>`;
+  panel.innerHTML = `<div class="color-pick-title">${STR.common.unsavedPromptHtml}</div>`;
   const row1 = document.createElement('button');
   row1.className = 'btn accent';
   row1.style.width = '100%'; row1.style.marginBottom = '8px';
-  row1.textContent = '保存してから開く';
+  row1.textContent = STR.common.unsavedSaveThenOpen;
   row1.onclick = ()=>{
     document.body.removeChild(backdrop);
     if(saveCurrent()) onProceed();
@@ -302,14 +302,14 @@ function showUnsavedPrompt(onProceed){
   const row2 = document.createElement('button');
   row2.className = 'btn';
   row2.style.width = '100%'; row2.style.marginBottom = '8px';
-  row2.textContent = '保存せず開く';
+  row2.textContent = STR.common.unsavedOpenWithoutSave;
   row2.onclick = ()=>{
     document.body.removeChild(backdrop);
     onProceed();
   };
   const row3 = document.createElement('button');
   row3.className = 'color-pick-cancel';
-  row3.textContent = 'キャンセル';
+  row3.textContent = STR.common.cancel;
   row3.onclick = ()=> document.body.removeChild(backdrop);
   panel.appendChild(row1);
   panel.appendChild(row2);
@@ -325,10 +325,10 @@ function guardedLoad(fn){
 
 function downloadCurrentFile(){
   const content = currentContentString();
-  if(!content){ alert('保存する内容がありません'); return; }
+  if(!content){ alert(STR.mode().noSaveContent); return; }
   const isHtml = currentMode === 'html';
-  const defaultName = (currentName || (isHtml ? 'html-export' : 'svg-export')).replace(/\.[a-zA-Z0-9]+$/, '');
-  const name = prompt('ファイル名を入れてね（拡張子は自動でつくよ）', defaultName);
+  const defaultName = (currentName || STR.mode().defaultExportName).replace(/\.[a-zA-Z0-9]+$/, '');
+  const name = prompt(STR.common.downloadNamePrompt, defaultName);
   if(name === null) return;
   let outText = content;
   if(!isHtml && !outText.includes('xmlns=')){
@@ -338,7 +338,7 @@ function downloadCurrentFile(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (name.trim() || (isHtml ? 'html-export' : 'svg-export')) + (isHtml ? '.html' : '.svg');
+  a.download = (name.trim() || STR.mode().defaultExportName) + (isHtml ? '.html' : '.svg');
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -370,7 +370,7 @@ if(wakeSupported){
     } else {
       const ok = await requestWakeLock();
       if(ok){ wakeLockWanted = true; wakeBtn.classList.add('active'); }
-      else alert('スリープ防止をオンにできませんでした');
+      else alert(STR.common.wakeLockFailed);
     }
   };
   document.addEventListener('visibilitychange', ()=>{
@@ -403,7 +403,7 @@ document.getElementById('codeCancel').onclick = closeCode;
 codeBackdrop.onclick = closeCode;
 document.getElementById('btnCodeApply').onclick = ()=>{
   const val = codeBox.value;
-  if(!val.trim()){ alert('コードが空です'); return; }
+  if(!val.trim()){ alert(STR.common.codeEmpty); return; }
   loadContent(val, currentName);
   isDirty = true;
   closeCode();

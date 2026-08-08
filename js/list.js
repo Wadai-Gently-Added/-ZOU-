@@ -284,7 +284,7 @@ function pickGroupColor(callback){
   panel.className = 'color-pick-panel';
   const title = document.createElement('div');
   title.className = 'color-pick-title';
-  title.textContent = 'グループの色を選んでね';
+  title.textContent = STR.common.groupColorPickTitle;
   panel.appendChild(title);
   const swatchWrap = document.createElement('div');
   swatchWrap.className = 'color-swatch-wrap';
@@ -302,7 +302,7 @@ function pickGroupColor(callback){
   panel.appendChild(swatchWrap);
   const cancel = document.createElement('button');
   cancel.className = 'color-pick-cancel';
-  cancel.textContent = 'キャンセル';
+  cancel.textContent = STR.common.cancel;
   cancel.onclick = ()=> document.body.removeChild(backdrop);
   panel.appendChild(cancel);
   backdrop.appendChild(panel);
@@ -373,7 +373,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     const allGroups = getGroups();
     const opts = [];
     opts.push({ label: '✏️ 名前を変更', onClick: ()=>{
-      const newName = prompt('名前を変更', item.name);
+      const newName = prompt(STR.common.itemRenamePrompt, item.name);
       if(newName === null || !newName.trim()) return;
       const cur = getSaved();
       const it = cur.find(x=>x.id===item.id);
@@ -388,7 +388,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       enterPrintSelectMode();
     }});
     opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
-      const name = prompt('グループ名を入れてね', '新しいグループ');
+      const name = prompt(STR.common.groupNamePrompt, STR.common.newGroupDefaultName);
       if(!name || !name.trim()) return;
       pickGroupColor((color)=>{
         const groups = getGroups();
@@ -415,7 +415,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       }});
     }
     opts.push({ label: '🗑 削除', onClick: ()=>{
-      if(!confirm(`「${item.name}」を削除する？元に戻せないよ`)) return;
+      if(!confirm(STR.common.itemDeleteConfirm(item.name))) return;
       const cur = getSaved().filter(x=>x.id!==item.id);
       setSaved(cur);
       renderList();
@@ -479,7 +479,7 @@ function renderList(){
         suppressClickUntil = Date.now() + 500;
         showContextMenu(ev.clientX, ev.clientY, [
           { label: '✏️ 名前を変更', onClick: ()=>{
-            const newName = prompt('グループ名を変更', g.name);
+            const newName = prompt(STR.common.groupRenamePrompt, g.name);
             if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
           }},
           { label: '🎨 色を変える', onClick: ()=>{
@@ -495,7 +495,7 @@ function renderList(){
             enterPrintSelectMode();
           }},
           { label: '🗑 グループ削除', onClick: ()=>{
-            if(!confirm(`「${g.name}」を削除する？中のSVGは消えずにバラバラに戻るよ`)) return;
+            if(!confirm(STR.common.groupDeleteConfirm(g.name, STR.mode().groupItemsNoun))) return;
             const cur = getSaved();
             cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
             setSaved(cur);
@@ -546,7 +546,7 @@ function renderList(){
 document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
 document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
   try{
-    if(printSelectedIds.size === 0){ alert('1件も選ばれていません'); return; }
+    if(printSelectedIds.size === 0){ alert(STR.common.noSelection); return; }
     // printSelectedIds はSetなので挿入順=チェックした順を保っている。
     // 印刷順もチェックした順にしたいので、この順のままitemsを組み立てる
     const byId = {};
@@ -558,7 +558,7 @@ document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
       openMultiPrint(items, mode, '選択した項目');
     });
   }catch(err){
-    alert('印刷メニューでエラーが発生しました: ' + (err && err.message ? err.message : err));
+    alert(STR.common.printMenuError(err && err.message ? err.message : err));
     console.error('btnPrintSelectGo error', err);
   }
 };
@@ -570,7 +570,7 @@ function showPrintFlyoutFromButton(btnEl, onPick){
 }
 
 document.getElementById('btnNewGroup').onclick = ()=>{
-  const name = prompt('グループ名を入れてね', '新しいグループ');
+  const name = prompt(STR.common.groupNamePrompt, STR.common.newGroupDefaultName);
   if(!name || !name.trim()) return;
   pickGroupColor((color)=>{
     const groups = getGroups();

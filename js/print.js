@@ -1,5 +1,5 @@
 // js/print.js — 印刷プレビュー構築、選んで印刷モード
-// 依存: js/storage.js (getSaved/getGroups)。list.jsから呼ばれる関数をここに定義。
+// 依存: js/storage.js (getSaved/getGroups), js/strings.js (STR)。list.jsから呼ばれる関数をここに定義。
 // list.js から参照されるグローバル: printSelectActive, printSelectedIds,
 //   enterPrintSelectMode(), exitPrintSelectMode(), updatePrintSelectBar(),
 //   printSubmenuOptions(), openSinglePrint(), openGroupPrint(), openMultiPrint()
@@ -256,7 +256,7 @@ function buildChecklistHTML(groupName, items){
 // グループの中身を印刷(チェックリスト/SVG/コード、5択共通のprintSubmenuOptionsから呼ばれる)
 function openGroupPrint(groupId, groupName, mode){
   const items = getSaved().filter(it => (it.group||null) === groupId);
-  if(items.length === 0){ alert('このグループにはSVGがありません'); return; }
+  if(items.length === 0){ alert(STR.mode().noGroupItems); return; }
   if(mode === 'checklist'){
     openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
     return;
@@ -266,7 +266,7 @@ function openGroupPrint(groupId, groupName, mode){
 
 // 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)
 function openMultiPrint(items, mode, title){
-  if(items.length === 0){ alert('1件も選ばれていません'); return; }
+  if(items.length === 0){ alert(STR.common.noSelection); return; }
   if(mode === 'checklist'){
     openPrintSheet(buildChecklistHTML(title, items), `${title || '選択した項目'}　チェックリスト（全${items.length}件）`);
     return;
@@ -327,7 +327,7 @@ document.getElementById('btnDoPrint').onclick = ()=>{
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       try{ window.print(); }
-      catch(e){ alert('印刷を開始できませんでした。もう一度試してください'); }
+      catch(e){ alert(STR.common.printStartFailed); }
     }, 50);
   });
 };

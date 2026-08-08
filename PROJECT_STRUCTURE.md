@@ -1,6 +1,6 @@
 # SVG/HTML Viewer — ファイル構成
 
-最終更新: 2026-08-05（商用販売に向けて、ユーザー向け表示文言・alert文から「みゅ」の口調を全除去）
+最終更新: 2026-08-05（全ユーザー向け文言をjs/strings.jsに一元化。alert/confirm/promptや空状態メッセージが各ファイルに散らばっていたのを1箇所にまとめ、SVG/HTMLモードの出し分けもここで完結するように）
 
 ```
 svg-viewer/
@@ -8,6 +8,7 @@ svg-viewer/
 ├── style.css            全スタイル(画面UI + 印刷用レイアウト)
 └── js/
     ├── storage.js        データ保存層(localStorage読み書き、グループ/並び順の管理、SVG/HTMLでキーを分離)
+    ├── strings.js         全ユーザー向け文言の一元管理(STRオブジェクト。SVG/HTML共通/モード別)
     ├── viewer.js         SVG/HTML表示(ズーム/パン)、読込、コード編集、単体保存/DL、スリープ防止、全体表示
     ├── print.js          印刷プレビュー構築(SVG/HTML両対応)、選んで印刷モード
     ├── list.js           マイSVG/マイHTML一覧の描画、グループ管理、ドラッグ並べ替え、右クリックメニュー
@@ -19,6 +20,7 @@ svg-viewer/
 
 ```html
 <script src="js/storage.js"></script>
+<script src="js/strings.js"></script>
 <script src="js/viewer.js"></script>
 <script src="js/print.js"></script>
 <script src="js/list.js"></script>
@@ -27,12 +29,19 @@ svg-viewer/
 
 ## ファイル間の依存関係
 - **storage.js**: 依存なし。他の全ファイルの土台。`currentMode`('svg'|'html')をここで保持し、保存先キー(`storeKey()`/`groupsKey()`/`topOrderKey()`)を切り替える。
-- **viewer.js**: storage.js の関数(getSaved/setSaved, currentMode)を使う。print.js/list.js の関数(showContextMenu, printSubmenuOptions, openSinglePrint)を右クリックメニューから呼ぶため、実行時参照(遅延呼び出し)で問題なし。
-- **print.js**: storage.js を使う。list.js の renderList() を選んで印刷モードの出入りで呼ぶ。
-- **list.js**: storage.js / viewer.js(loadContent, guardedLoad, isDirty等) / print.js(印刷系関数) を使う。
+- **strings.js**: storage.jsの`currentMode`を参照する(`STR.mode()`)。storage.jsの直後、他の全UIファイルより先に読み込む。
+- **viewer.js**: storage.js / strings.js の関数・値を使う。print.js/list.js の関数(showContextMenu, printSubmenuOptions, openSinglePrint)を右クリックメニューから呼ぶため、実行時参照(遅延呼び出し)で問題なし。
+- **print.js**: storage.js / strings.js を使う。list.js の renderList() を選んで印刷モードの出入りで呼ぶ。
+- **list.js**: storage.js / strings.js / viewer.js(loadContent, guardedLoad, isDirty等) / print.js(印刷系関数) を使う。
 - **mode.js**: 上記全ファイルの状態(currentMode, stage, printSelectActive等)をタブ切り替え時にまとめてリセットする。最後に読み込む。
 
 (script タグに `type="module"` は使っていないため、`const`/`let`/`function` はブラウザの同一グローバルスコープを共有する。呼び出し時点で全ファイルが読み込み済みであれば、宣言順が多少前後しても実害はない)
+
+## 文言管理について(strings.js)
+- `STR.common.xxx` … SVG/HTMLどちらのモードでも同じ文言(保存失敗、削除確認、キャンセル等)
+- `STR.svg.xxx` / `STR.html.xxx` … モードごとに違う文言(空状態メッセージ、パースエラー、メニューラベル等)
+- `STR.mode()` … `currentMode`に応じて`STR.svg`か`STR.html`を自動で返すショートカット。JS内では基本的にこれを使う
+- alert/confirm/promptの文言、および空状態メッセージ・タブ切り替え時のラベルは全てここ経由。今後トーンを変えたり多言語対応する時もこのファイルだけ触れば良い
 
 ## HTMLビューワー機能について
 - SVGと全く同じ操作性(ピンチズーム/パン、拡大縮小できる一枚絵としての表示)でHTMLコンテンツも表示できる
