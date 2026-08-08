@@ -1,16 +1,17 @@
-# SVG Viewer — ファイル構成
+# SVG/HTML Viewer — ファイル構成
 
-最終更新: 2026-08-05（チェックリストを印刷メニューの5択目として統合、選んで印刷を右クリックメニューにも追加）
+最終更新: 2026-08-05（商用販売に向けて、ユーザー向け表示文言・alert文から「みゅ」の口調を全除去）
 
 ```
 svg-viewer/
 ├── index.html          HTML骨組み(要素配置のみ)。style.css と js/*.js を読み込む
 ├── style.css            全スタイル(画面UI + 印刷用レイアウト)
 └── js/
-    ├── storage.js        データ保存層(localStorage読み書き、グループ/並び順の管理)
-    ├── viewer.js         SVG表示(ズーム/パン)、読込、コード編集、単体保存/DL、スリープ防止、全体表示
-    ├── print.js          印刷プレビュー構築(SVG手順/コード一覧/チェックリスト)、選んで印刷モード
-    └── list.js           マイSVG一覧の描画、グループ管理、ドラッグ並べ替え、右クリックメニュー
+    ├── storage.js        データ保存層(localStorage読み書き、グループ/並び順の管理、SVG/HTMLでキーを分離)
+    ├── viewer.js         SVG/HTML表示(ズーム/パン)、読込、コード編集、単体保存/DL、スリープ防止、全体表示
+    ├── print.js          印刷プレビュー構築(SVG/HTML両対応)、選んで印刷モード
+    ├── list.js           マイSVG/マイHTML一覧の描画、グループ管理、ドラッグ並べ替え、右クリックメニュー
+    └── mode.js           SVGビューワー/HTMLビューワーのタブ切り替え、ラベル・状態の一括更新
 ```
 
 ## 読み込み順序(重要)
@@ -21,15 +22,25 @@ svg-viewer/
 <script src="js/viewer.js"></script>
 <script src="js/print.js"></script>
 <script src="js/list.js"></script>
+<script src="js/mode.js"></script>
 ```
 
 ## ファイル間の依存関係
-- **storage.js**: 依存なし。他の全ファイルの土台。
-- **viewer.js**: storage.js の関数(getSaved/setSaved)を使う。print.js/list.js の関数(showContextMenu, printSubmenuOptions, openSinglePrint)を右クリックメニューから呼ぶため、実行時参照(遅延呼び出し)で問題なし。
+- **storage.js**: 依存なし。他の全ファイルの土台。`currentMode`('svg'|'html')をここで保持し、保存先キー(`storeKey()`/`groupsKey()`/`topOrderKey()`)を切り替える。
+- **viewer.js**: storage.js の関数(getSaved/setSaved, currentMode)を使う。print.js/list.js の関数(showContextMenu, printSubmenuOptions, openSinglePrint)を右クリックメニューから呼ぶため、実行時参照(遅延呼び出し)で問題なし。
 - **print.js**: storage.js を使う。list.js の renderList() を選んで印刷モードの出入りで呼ぶ。
-- **list.js**: storage.js / viewer.js(loadSVG, guardedLoad, isDirty等) / print.js(印刷系関数) を使う。
+- **list.js**: storage.js / viewer.js(loadContent, guardedLoad, isDirty等) / print.js(印刷系関数) を使う。
+- **mode.js**: 上記全ファイルの状態(currentMode, stage, printSelectActive等)をタブ切り替え時にまとめてリセットする。最後に読み込む。
 
 (script タグに `type="module"` は使っていないため、`const`/`let`/`function` はブラウザの同一グローバルスコープを共有する。呼び出し時点で全ファイルが読み込み済みであれば、宣言順が多少前後しても実害はない)
+
+## HTMLビューワー機能について
+- SVGと全く同じ操作性(ピンチズーム/パン、拡大縮小できる一枚絵としての表示)でHTMLコンテンツも表示できる
+- 保存データはSVGとHTMLで完全に別(localStorageのキーが異なる: `svgViewerSavedItems`系 / `htmlViewerSavedItems`系)。タブを切り替えると自動的にマイSVG⇔マイHTMLも切り替わる
+- HTML読込は`extractSvgElement`のような厳密なタグ抽出はせず、そのまま`.html-content-wrap`に流し込んで表示する(スクリプトも実行される。ユーザー自身が作った/持ち込んだHTMLを信頼する前提)
+- マイSVG/マイHTML一覧のサムネイルは、HTMLモードでは安全のため(スクリプト実行・レイアウト崩れ防止)実際のHTMLを埋め込まず汎用アイコン(📄)を表示
+- 印刷機能もSVG/HTML両対応。SVGモードのみ「サイズ/ViewBox表」が付く(HTMLには意味が薄いため省略)
+- 保存/ダウンロード/コード編集/印刷は`hasStageContent()`/`currentContentString()`という共通ヘルパー経由でモードを意識せず動くようにしてある
 
 ## 修正履歴
 ### 前回分

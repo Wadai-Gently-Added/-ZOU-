@@ -1,5 +1,5 @@
 // js/list.js — マイSVG一覧の描画、グループ管理、ドラッグ並べ替え、右クリック(長押し)メニュー
-// 依存: js/storage.js, js/viewer.js(loadSVG/guardedLoad/isDirty等), js/print.js(印刷系関数)
+// 依存: js/storage.js, js/viewer.js(loadContent/guardedLoad/isDirty等), js/print.js(印刷系関数)
 // 最後に読み込むこと(showContextMenu等がviewer.js/print.jsのcontextmenuハンドラから参照される)
 
 const listSheet = document.getElementById('listSheet');
@@ -326,9 +326,10 @@ function buildItemRow(item, i, groups, isTopLevel){
     : '<span class="handle" title="ドラッグで並べ替え / 別グループへ移動">⠿</span>';
   const options = ['<option value="">グループなし</option>']
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
+  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
   row.innerHTML = `
     ${handleHtml}
-    <div class="thumb">${item.content}</div>
+    <div class="thumb">${thumbHtml}</div>
     <div class="meta">
       <div class="name">${item.name}</div>
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -353,7 +354,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       return;
     }
     guardedLoad(()=>{
-      loadSVG(item.content, item.name);
+      loadContent(item.content, item.name);
       isDirty = false;
       renderList();
     });
@@ -545,7 +546,7 @@ function renderList(){
 document.getElementById('btnPrintSelectCancel').onclick = exitPrintSelectMode;
 document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
   try{
-    if(printSelectedIds.size === 0){ alert('1件も選ばれてないみゅ'); return; }
+    if(printSelectedIds.size === 0){ alert('1件も選ばれていません'); return; }
     // printSelectedIds はSetなので挿入順=チェックした順を保っている。
     // 印刷順もチェックした順にしたいので、この順のままitemsを組み立てる
     const byId = {};
@@ -557,7 +558,7 @@ document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
       openMultiPrint(items, mode, '選択した項目');
     });
   }catch(err){
-    alert('印刷メニューでエラーが起きたみゅ: ' + (err && err.message ? err.message : err));
+    alert('印刷メニューでエラーが発生しました: ' + (err && err.message ? err.message : err));
     console.error('btnPrintSelectGo error', err);
   }
 };

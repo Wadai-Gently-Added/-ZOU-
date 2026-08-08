@@ -12,12 +12,17 @@
 <body>
 <div id="app">
 
+  <div id="modeTabs">
+    <button class="mode-tab active" id="tabSvg" data-mode="svg">SVGビューワー</button>
+    <button class="mode-tab" id="tabHtml" data-mode="html">HTMLビューワー</button>
+  </div>
+
   <div id="topbar">
-    <h1>SVG VIEWER</h1>
+    <h1 id="appTitle">SVG VIEWER</h1>
     <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-      <button id="codeBtn" class="topbtn">🖊 コード</button>
+      <button id="codeBtn" class="topbtn"><span id="codeBtnLabel">🖊 コード</span></button>
       <div class="pillgroup">
-        <button id="listBtn">📂 マイSVG</button>
+        <button id="listBtn"><span id="listBtnLabel">📂 マイSVG</span></button>
         <button id="btnSave">＋ 登録</button>
       </div>
     </div>
@@ -25,8 +30,8 @@
 
   <div id="viewerWrap" class="bg-white">
     <div id="empty">
-      <div class="big">まだSVGが読み込まれてないみゅ</div>
-      <div>下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
+      <div class="big" id="emptyBig">まだSVGが読み込まれていません</div>
+      <div id="emptySub">下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
     </div>
     <div id="stage" style="display:none"></div>
   </div>
@@ -62,7 +67,7 @@
 <!-- paste sheet -->
 <div class="sheet-backdrop" id="pasteBackdrop"></div>
 <div class="sheet" id="pasteSheet">
-  <h2>SVGコードを貼り付け</h2>
+  <h2 id="pasteSheetTitle">SVGコードを貼り付け</h2>
   <textarea id="pasteBox" placeholder="&lt;svg&gt;...&lt;/svg&gt; をここにペースト"></textarea>
   <div class="row">
     <button class="btn accent" id="btnPasteLoad">表示する</button>
@@ -73,13 +78,15 @@
 <!-- saved list sheet -->
 <div class="sheet-backdrop" id="listBackdrop"></div>
 <div class="sheet" id="listSheet" style="max-height:70vh">
-  <h2 style="display:flex; align-items:center; justify-content:space-between;">
-    マイSVG
-    <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;">＋ グループ</button>
-    <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;">☑️ 選んで印刷</button>
+  <h2 style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+    <span id="listSheetTitle">マイSVG</span>
+    <span style="display:flex; gap:6px;">
+      <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;">＋ グループ</button>
+      <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;">☑️ 選んで印刷</button>
+    </span>
   </h2>
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
-  <div id="savedEmpty" style="display:none">まだ何も保存してないみゅ</div>
+  <div id="savedEmpty" style="display:none">まだ何も保存されていません</div>
   <div id="printSelectBar" style="display:none;">
     <span id="printSelectCount">選択中: 0件</span>
     <button id="btnPrintSelectGo" class="btn accent" style="flex:0 0 auto; padding:6px 12px;">🖨 印刷する</button>
@@ -91,8 +98,8 @@
 <!-- code edit sheet -->
 <div class="sheet-backdrop" id="codeBackdrop"></div>
 <div class="sheet" id="codeSheet" style="max-height:85vh">
-  <h2>SVGコードを編集</h2>
-  <textarea id="codeBox" style="height:220px" placeholder="表示中のSVGがまだ無いみゅ"></textarea>
+  <h2 id="codeSheetTitle">SVGコードを編集</h2>
+  <textarea id="codeBox" style="height:220px" placeholder="表示中のSVGがありません"></textarea>
   <div class="row">
     <button class="btn accent" id="btnCodeApply">反映する</button>
   </div>
@@ -115,5 +122,6 @@
 <script src="js/viewer.js"></script>
 <script src="js/print.js"></script>
 <script src="js/list.js"></script>
+<script src="js/mode.js"></script>
 </body>
 </html>

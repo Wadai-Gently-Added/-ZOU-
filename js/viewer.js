@@ -1,7 +1,7 @@
-// js/viewer.js — SVG表示(ズーム/パン)、読込、コード編集、単体保存/ダウンロード、スリープ防止、全体表示
-// 依存: js/storage.js (getSaved/setSaved)。list.js/print.jsより先に読み込むこと。
+// js/viewer.js — SVG/HTML表示(ズーム/パン)、読込、コード編集、単体保存/ダウンロード、スリープ防止、全体表示
+// 依存: js/storage.js (getSaved/setSaved, currentMode)。list.js/print.jsより先に読み込むこと。
 // list.js/print.js から参照されるグローバル: stage, wrap, currentName, isDirty,
-//   loadSVG(), guardedLoad(), fitToView(), showContextMenu()(list.jsで定義, ここから呼ぶ)
+//   loadContent(), guardedLoad(), fitToView(), showContextMenu()(list.jsで定義, ここから呼ぶ)
 
 const stage = document.getElementById('stage');
 const empty = document.getElementById('empty');
@@ -16,23 +16,33 @@ function applyTransform(){
   stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 
+// SVGモードはgetBBox(SVG自身の座標系)、HTMLモードは実際のレンダリングサイズ(getBoundingClientRect)
+// を使って、内容が枠の86%に収まるよう自動でスケール・中央寄せする
 function fitToView(){
-  const svgEl = stage.querySelector('svg');
-  if(!svgEl){ scale = 1; tx = 0; ty = 0; applyTransform(); return; }
-  let bbox = null;
-  try{ bbox = svgEl.getBBox(); }catch(e){}
-  if(!bbox || !bbox.width || !bbox.height){
-    scale = 1; tx = 0; ty = 0; applyTransform(); return;
+  const isHtml = currentMode === 'html';
+  const targetEl = isHtml ? stage.querySelector('.html-content-wrap') : stage.querySelector('svg');
+  if(!targetEl){ scale = 1; tx = 0; ty = 0; applyTransform(); return; }
+
+  let box = null;
+  if(isHtml){
+    // 実寸を測るため、既存の変形を一旦リセットしてから計測する
+    scale = 1; tx = 0; ty = 0; applyTransform();
+    const r = targetEl.getBoundingClientRect();
+    if(r.width && r.height) box = { x: 0, y: 0, width: r.width, height: r.height };
+  } else {
+    try{ box = targetEl.getBBox(); }catch(e){}
   }
+  if(!box || !box.width || !box.height){ scale = 1; tx = 0; ty = 0; applyTransform(); return; }
+
   const rect = wrap.getBoundingClientRect();
   const availW = rect.width * 0.86;
   const availH = rect.height * 0.86;
-  let s = Math.min(availW / bbox.width, availH / bbox.height);
+  let s = Math.min(availW / box.width, availH / box.height);
   if(!isFinite(s) || s <= 0) s = 1;
   scale = Math.min(s, 10);
-  // center the SVG's actual content box (not just its 0,0 origin)
-  const cx = bbox.x + bbox.width / 2;
-  const cy = bbox.y + bbox.height / 2;
+  // center the content's actual box (not just its 0,0 origin)
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
   tx = -cx * scale;
   ty = -cy * scale;
   applyTransform();
@@ -57,10 +67,11 @@ function extractSvgElement(text){
   return null;
 }
 
-function loadSVG(text, name){
+// SVGモード: <svg>タグを厳密に取り出して読み込む
+function loadSvgContent(text, name){
   const svgSource = extractSvgElement(text);
   if(!svgSource){
-    alert('SVGとして読み込めなかったみゅ。中身がSVGコードか確認してね（HTMLや他のテキストは読み込めないよ）');
+    alert('SVGとして読み込めませんでした。中身がSVGコードか確認してください（HTMLや他のテキストは読み込めません）');
     return;
   }
   stage.innerHTML = '';
@@ -77,6 +88,29 @@ function loadSVG(text, name){
     svgEl.style.height = vb.height + 'px';
   }
   fitToView();
+}
+
+// HTMLモード: SVGのような厳密なタグ抽出はせず、そのままラッパーに流し込んで表示する
+// (ユーザー自身が作った/持ち込んだHTMLを信頼する前提。スクリプトも実行される)
+function loadHtmlContent(text, name){
+  if(!text || !text.trim()){
+    alert('HTMLとして読み込めませんでした。中身が空のようです');
+    return;
+  }
+  stage.innerHTML = '';
+  const wrapEl = document.createElement('div');
+  wrapEl.className = 'html-content-wrap';
+  wrapEl.innerHTML = text;
+  stage.appendChild(wrapEl);
+  stage.style.display = 'block';
+  empty.style.display = 'none';
+  currentName = name || null;
+  fitToView();
+}
+
+function loadContent(text, name){
+  if(currentMode === 'html') loadHtmlContent(text, name);
+  else loadSvgContent(text, name);
 }
 
 /* ---- pinch / pan ---- */
@@ -160,9 +194,9 @@ document.querySelectorAll('.bgtoggle button').forEach(btn=>{
 document.getElementById('btnClipboard').onclick = async ()=>{
   try{
     const text = await navigator.clipboard.readText();
-    guardedLoad(()=>{ loadSVG(text, 'クリップボードから'); isDirty = true; });
+    guardedLoad(()=>{ loadContent(text, 'クリップボードから'); isDirty = true; });
   }catch(err){
-    alert('クリップボードを読めなかったみゅ。Safariの設定で許可が必要な場合があるよ。「貼り付け」ボタンから手動で貼ってね');
+    alert('クリップボードを読み取れませんでした。Safariの設定で許可が必要な場合があります。「貼り付け」ボタンから手動で貼ってください');
   }
 };
 
@@ -177,7 +211,7 @@ pasteBackdrop.onclick = closePaste;
 document.getElementById('btnPasteLoad').onclick = ()=>{
   const val = document.getElementById('pasteBox').value;
   closePaste();
-  guardedLoad(()=>{ loadSVG(val, '手動貼り付け'); isDirty = true; });
+  guardedLoad(()=>{ loadContent(val, '手動貼り付け'); isDirty = true; });
 };
 
 /* ---- file input ---- */
@@ -186,17 +220,29 @@ document.getElementById('fileInput').onchange = (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = ()=> guardedLoad(()=>{ loadSVG(reader.result, file.name); isDirty = true; });
+  reader.onload = ()=> guardedLoad(()=>{ loadContent(reader.result, file.name); isDirty = true; });
   reader.readAsText(file);
   e.target.value = '';
 };
 
+// SVG/HTML両モードで「今表示中の内容」を一貫して取得するためのヘルパー
+function hasStageContent(){
+  return currentMode === 'html' ? !!stage.querySelector('.html-content-wrap') : !!stage.querySelector('svg');
+}
+function currentContentString(){
+  if(currentMode === 'html'){
+    const el = stage.querySelector('.html-content-wrap');
+    return el ? el.innerHTML : null; // ラッパー自体は含めない(保存/読込を繰り返しても二重に包まれないように)
+  }
+  const el = stage.querySelector('svg');
+  return el ? el.outerHTML : null;
+}
+
 /* ---- save current ---- */
 function saveCurrent(){
-  const svgEl = stage.querySelector('svg');
-  if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return false; }
+  if(!hasStageContent()){ alert('保存する内容がありません'); return false; }
   const arr = getSaved();
-  let suggested = currentName || ('SVG ' + new Date().toLocaleString('ja-JP'));
+  let suggested = currentName || ((currentMode === 'html' ? 'HTML ' : 'SVG ') + new Date().toLocaleString('ja-JP'));
   const base = suggested.replace(/\s*\(\d+\)\s*$/, '');
   const existingNums = arr
     .map(it => it.name)
@@ -212,28 +258,28 @@ function saveCurrent(){
   const name = prompt('保存名を入れてね', suggested);
   if(name === null) return false;
   const now = new Date().toISOString();
-  arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: stage.innerHTML, savedAt: now, modifiedAt: now, pinned:false, group:null });
+  arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: currentContentString(), savedAt: now, modifiedAt: now, pinned:false, group:null });
   setSaved(arr.slice(0, 100));
   isDirty = false;
   return true;
 }
 
 document.getElementById('btnSave').onclick = ()=>{
-  if(saveCurrent()) alert('保存したみゅ！');
+  if(saveCurrent()) alert('保存しました！');
 };
 
 wrap.addEventListener('contextmenu', (ev)=>{
-  if(!stage.querySelector('svg')) return;
+  if(!hasStageContent()) return;
   ev.preventDefault();
   showContextMenu(ev.clientX, ev.clientY, [
-    { label: '＋ マイSVGに登録', onClick: ()=>{
-      if(saveCurrent()) alert('保存したみゅ！');
+    { label: currentMode === 'html' ? '＋ マイHTMLに登録' : '＋ マイSVGに登録', onClick: ()=>{
+      if(saveCurrent()) alert('保存しました！');
     }},
-    { label: '📥 SVGファイル保存', onClick: downloadCurrentSVG },
+    { label: currentMode === 'html' ? '📥 HTMLファイル保存' : '📥 SVGファイル保存', onClick: downloadCurrentFile },
     { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
-      const svgEl = stage.querySelector('svg');
-      if(!svgEl){ alert('表示中の内容がまだ無いみゅ'); return; }
-      openSinglePrint(currentName, svgEl.outerHTML, mode);
+      const content = currentContentString();
+      if(!content){ alert('表示中の内容がありません'); return; }
+      openSinglePrint(currentName, content, mode);
     })}
   ]);
 });
@@ -244,7 +290,7 @@ function showUnsavedPrompt(onProceed){
   backdrop.className = 'color-pick-backdrop';
   const panel = document.createElement('div');
   panel.className = 'color-pick-panel';
-  panel.innerHTML = `<div class="color-pick-title">今表示中の内容が保存されてないみゅ。<br>どうする？</div>`;
+  panel.innerHTML = `<div class="color-pick-title">今表示中の内容が保存されていません。<br>どうしますか？</div>`;
   const row1 = document.createElement('button');
   row1.className = 'btn accent';
   row1.style.width = '100%'; row1.style.marginBottom = '8px';
@@ -277,21 +323,22 @@ function guardedLoad(fn){
   else{ fn(); }
 }
 
-function downloadCurrentSVG(){
-  const svgEl = stage.querySelector('svg');
-  if(!svgEl){ alert('保存する内容がまだ無いみゅ'); return; }
-  const defaultName = (currentName || 'svg-export').replace(/\.[a-zA-Z0-9]+$/, '');
+function downloadCurrentFile(){
+  const content = currentContentString();
+  if(!content){ alert('保存する内容がありません'); return; }
+  const isHtml = currentMode === 'html';
+  const defaultName = (currentName || (isHtml ? 'html-export' : 'svg-export')).replace(/\.[a-zA-Z0-9]+$/, '');
   const name = prompt('ファイル名を入れてね（拡張子は自動でつくよ）', defaultName);
   if(name === null) return;
-  let svgText = svgEl.outerHTML;
-  if(!svgText.includes('xmlns=')){
-    svgText = svgText.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  let outText = content;
+  if(!isHtml && !outText.includes('xmlns=')){
+    outText = outText.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
   }
-  const blob = new Blob([svgText], { type: 'image/svg+xml' });
+  const blob = new Blob([outText], { type: isHtml ? 'text/html' : 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (name.trim() || 'svg-export') + '.svg';
+  a.download = (name.trim() || (isHtml ? 'html-export' : 'svg-export')) + (isHtml ? '.html' : '.svg');
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -323,7 +370,7 @@ if(wakeSupported){
     } else {
       const ok = await requestWakeLock();
       if(ok){ wakeLockWanted = true; wakeBtn.classList.add('active'); }
-      else alert('スリープ防止をオンにできなかったみゅ');
+      else alert('スリープ防止をオンにできませんでした');
     }
   };
   document.addEventListener('visibilitychange', ()=>{
@@ -347,8 +394,7 @@ const codeBackdrop = document.getElementById('codeBackdrop');
 const codeBox = document.getElementById('codeBox');
 function openCode(){
   closeAllSheets();
-  const svgEl = stage.querySelector('svg');
-  codeBox.value = svgEl ? svgEl.outerHTML : '';
+  codeBox.value = currentContentString() || '';
   codeSheet.classList.add('open'); codeBackdrop.classList.add('open');
 }
 function closeCode(){ codeSheet.classList.remove('open'); codeBackdrop.classList.remove('open'); }
@@ -357,8 +403,8 @@ document.getElementById('codeCancel').onclick = closeCode;
 codeBackdrop.onclick = closeCode;
 document.getElementById('btnCodeApply').onclick = ()=>{
   const val = codeBox.value;
-  if(!val.trim()){ alert('コードが空みゅ'); return; }
-  loadSVG(val, currentName);
+  if(!val.trim()){ alert('コードが空です'); return; }
+  loadContent(val, currentName);
   isDirty = true;
   closeCode();
 };

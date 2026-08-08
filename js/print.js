@@ -61,6 +61,12 @@ function svgForThumbnail(code){
   return code;
 }
 
+// 印刷の枠に埋め込む内容を用意する。SVGモードはgetBBoxでviewBoxを引き直して自動リサイズ、
+// HTMLモードはそのまま埋め込む(ページ全体のような複雑なHTMLは枠に収まりきらない場合がある)
+function contentForThumbnail(code){
+  return currentMode === 'html' ? code : svgForThumbnail(code);
+}
+
 // SVGコードから「サイズ」「ViewBox」の表示用テキストを取り出す
 function getSvgMeta(code){
   try{
@@ -93,7 +99,7 @@ function buildFlowSection(items, withArrows){
     return `
       <div class="flow-step">
         <div class="flow-num">${i+1}</div>
-        <div class="flow-svg">${svgForThumbnail(it.content)}</div>
+        <div class="flow-svg">${contentForThumbnail(it.content)}</div>
         <div class="flow-name">${nameEsc}</div>
         ${groupLine}
       </div>`;
@@ -103,7 +109,8 @@ function buildFlowSection(items, withArrows){
     parts.push(c);
     if(withArrows && i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
   });
-  const titleText = withArrows ? 'SVG 手順' : 'SVG 一覧';
+  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
+  const titleText = withArrows ? noun + ' 手順' : noun + ' 一覧';
   return `
     <div class="print-page flow-page">
       <div class="print-title">${titleText}</div>
@@ -114,21 +121,26 @@ function buildFlowSection(items, withArrows){
   `;
 }
 
-// 単品印刷用: 大きいSVGプレビュー + サイズ/ViewBox表 + メモ欄
+// 単品印刷用: 大きいプレビュー + メモ欄(SVGモードはサイズ/ViewBox表も付く)
 function buildSingleImageSection(item){
   const nameEsc = escHtml(item.name || '(無題)');
-  const meta = getSvgMeta(item.content);
+  const isHtml = currentMode === 'html';
   const groupName = getGroupNameOf(item);
+  const metaTable = isHtml ? '' : (()=>{
+    const meta = getSvgMeta(item.content);
+    return `
+      <table class="code-list-table single-meta-table">
+        <tr><th>サイズ</th><td>${escHtml(meta.size)}</td></tr>
+        <tr><th>ViewBox</th><td>${escHtml(meta.viewBox)}</td></tr>
+      </table>`;
+  })();
   return `
     <div class="print-page single-page">
       <div class="print-title">${nameEsc}</div>
       ${groupName ? `<div class="print-meta">グループ: ${escHtml(groupName)}</div>` : ''}
       <div class="print-meta">作成日時: ${fmtDate(item.savedAt)}</div>
-      <div class="single-svg-frame">${svgForThumbnail(item.content)}</div>
-      <table class="code-list-table single-meta-table">
-        <tr><th>サイズ</th><td>${escHtml(meta.size)}</td></tr>
-        <tr><th>ViewBox</th><td>${escHtml(meta.viewBox)}</td></tr>
-      </table>
+      <div class="single-svg-frame">${contentForThumbnail(item.content)}</div>
+      ${metaTable}
       <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
       <div class="print-note-box" contenteditable="true"></div>
     </div>
@@ -153,7 +165,7 @@ function buildCodeListSection(items){
   }).join('');
   return `
     <div class="print-page">
-      <div class="print-title">SVG コード一覧</div>
+      <div class="print-title">${currentMode === 'html' ? 'HTML' : 'SVG'} コード一覧</div>
       <table class="code-list-table">
         <thead><tr><th>#</th><th>ファイル名</th><th>グループ</th><th>作成日時</th><th>修正日時</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -176,10 +188,11 @@ function buildPrintOutput(items, mode){
 }
 
 function printModeLabel(mode){
-  if(mode === 'image') return 'SVG手順';
-  if(mode === 'image-grid') return 'SVG一覧';
+  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
+  if(mode === 'image') return noun + '手順';
+  if(mode === 'image-grid') return noun + '一覧';
   if(mode === 'code') return 'コード';
-  return 'SVG＋コード';
+  return noun + '＋コード';
 }
 
 function openPrintSheet(html, title){
@@ -194,12 +207,13 @@ function openPrintSheet(html, title){
 
 // 単品印刷・選んで印刷・グループ一括印刷で共通の5択(チェックリストも含めて1つのメニューに統合)
 function printSubmenuOptions(onPick){
+  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
   return [
     { label: '☑️ チェックリスト印刷', onClick: ()=> onPick('checklist') },
-    { label: '🖼 SVG印刷(手順・矢印あり)', onClick: ()=> onPick('image') },
-    { label: '📋 SVG一覧印刷(矢印なし)', onClick: ()=> onPick('image-grid') },
+    { label: `🖼 ${noun}印刷(手順・矢印あり)`, onClick: ()=> onPick('image') },
+    { label: `📋 ${noun}一覧印刷(矢印なし)`, onClick: ()=> onPick('image-grid') },
     { label: '🔤 コード印刷', onClick: ()=> onPick('code') },
-    { label: '🖼🔤 SVG＋コード印刷', onClick: ()=> onPick('both') }
+    { label: `🖼🔤 ${noun}＋コード印刷`, onClick: ()=> onPick('both') }
   ];
 }
 
@@ -242,7 +256,7 @@ function buildChecklistHTML(groupName, items){
 // グループの中身を印刷(チェックリスト/SVG/コード、5択共通のprintSubmenuOptionsから呼ばれる)
 function openGroupPrint(groupId, groupName, mode){
   const items = getSaved().filter(it => (it.group||null) === groupId);
-  if(items.length === 0){ alert('このグループにはSVGが無いみゅ'); return; }
+  if(items.length === 0){ alert('このグループにはSVGがありません'); return; }
   if(mode === 'checklist'){
     openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
     return;
@@ -252,7 +266,7 @@ function openGroupPrint(groupId, groupName, mode){
 
 // 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)
 function openMultiPrint(items, mode, title){
-  if(items.length === 0){ alert('1件も選ばれてないみゅ'); return; }
+  if(items.length === 0){ alert('1件も選ばれていません'); return; }
   if(mode === 'checklist'){
     openPrintSheet(buildChecklistHTML(title, items), `${title || '選択した項目'}　チェックリスト（全${items.length}件）`);
     return;
@@ -313,7 +327,7 @@ document.getElementById('btnDoPrint').onclick = ()=>{
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       try{ window.print(); }
-      catch(e){ alert('印刷を開始できなかったみゅ。もう一度試してみてね'); }
+      catch(e){ alert('印刷を開始できませんでした。もう一度試してください'); }
     }, 50);
   });
 };

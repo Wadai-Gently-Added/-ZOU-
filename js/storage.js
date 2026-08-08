@@ -1,25 +1,28 @@
 // js/storage.js — データ保存層 (localStorageの読み書き, グループ/並び順の管理)
-// 依存: なし。他の全js(viewer.js/list.js/print.js)より先に読み込むこと。
+// 依存: なし。他の全js(viewer.js/list.js/print.js/mode.js)より先に読み込むこと。
+// currentMode('svg'|'html')によって保存先キーを切り替える。SVGとHTMLはマイSVG/マイHTMLとして
+// 完全に別のデータとして保存され、混ざらない。mode.jsがcurrentModeを切り替える。
 
-const STORE_KEY = 'svgViewerSavedItems';
-const GROUPS_KEY = 'svgViewerGroups';
-const TOPORDER_KEY = 'svgViewerTopOrder';
+let currentMode = 'svg';
+function storeKey(){ return currentMode === 'html' ? 'htmlViewerSavedItems' : 'svgViewerSavedItems'; }
+function groupsKey(){ return currentMode === 'html' ? 'htmlViewerGroups' : 'svgViewerGroups'; }
+function topOrderKey(){ return currentMode === 'html' ? 'htmlViewerTopOrder' : 'svgViewerTopOrder'; }
 const GROUP_COLORS = ['#e0625c','#e0b85c','#7ea6e0','#b57ee0','#e07eb8','#8bd17e'];
 
 function getGroups(){
-  try{ return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); }
+  try{ return JSON.parse(localStorage.getItem(groupsKey()) || '[]'); }
   catch(e){ return []; }
 }
 function setGroups(arr){
-  try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(arr)); }
+  try{ localStorage.setItem(groupsKey(), JSON.stringify(arr)); }
   catch(e){}
 }
 function getTopOrder(){
-  try{ return JSON.parse(localStorage.getItem(TOPORDER_KEY) || '[]'); }
+  try{ return JSON.parse(localStorage.getItem(topOrderKey()) || '[]'); }
   catch(e){ return []; }
 }
 function setTopOrder(arr){
-  try{ localStorage.setItem(TOPORDER_KEY, JSON.stringify(arr)); }
+  try{ localStorage.setItem(topOrderKey(), JSON.stringify(arr)); }
   catch(e){}
 }
 // topOrder = グループ化タブ(グループ本体)とグループ化してない個別アイテムが
@@ -46,19 +49,19 @@ function reconcileTopOrder(items, groups){
 
 function getSaved(){
   let arr;
-  try{ arr = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+  try{ arr = JSON.parse(localStorage.getItem(storeKey()) || '[]'); }
   catch(e){ arr = []; }
   let changed = false;
   arr.forEach(it=>{
     if(!it.id){ it.id = 's' + Date.now() + Math.random().toString(36).slice(2,7); changed = true; }
     if(!it.modifiedAt){ it.modifiedAt = it.savedAt; changed = true; }
   });
-  if(changed){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }catch(e){} }
+  if(changed){ try{ localStorage.setItem(storeKey(), JSON.stringify(arr)); }catch(e){} }
   return arr;
 }
 function setSaved(arr){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
-  catch(e){ alert('保存に失敗したみゅ（容量オーバーかも）'); }
+  try{ localStorage.setItem(storeKey(), JSON.stringify(arr)); }
+  catch(e){ alert('保存に失敗しました（容量オーバーの可能性があります）'); }
 }
 
 function pruneEmptyGroups(){
