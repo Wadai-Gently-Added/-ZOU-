@@ -58,6 +58,8 @@ const LANG_EN = {
     btnNewGroup: '＋ Group',
     btnStartSelectPrint: '☑️ Select & Print',
     btnStopSelectPrint: '✕ Cancel Selection',
+    htmlModeInteractLabel: '🖱 Interact Mode',
+    htmlModeViewLabel: '🔍 View Mode',
     printSelectCount: (n)=> `Selected: ${n}`,
     btnPrintSelectGo: '🖨 Print',
     sheetClose: 'Close',

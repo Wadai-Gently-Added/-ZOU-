@@ -97,6 +97,25 @@ function loadSvgContent(text, name){
 let currentHtmlSource = null;
 const HTML_FRAME_WIDTH = 1280;
 const HTML_FRAME_HEIGHT = 800;
+// false=閲覧モード(ズーム/ドラッグ優先、iframe内はクリック不可)
+// true=操作モード(iframe内のボタン/プルダウン等を直接操作できるが、その上でのズーム/ドラッグは効かない)
+let htmlInteractMode = false;
+
+function updateHtmlInteractButton(){
+  const btn = document.getElementById('btnHtmlInteract');
+  if(!btn) return;
+  if(currentMode !== 'html'){ btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  btn.textContent = htmlInteractMode ? STR.common.htmlModeViewLabel : STR.common.htmlModeInteractLabel;
+  btn.classList.toggle('active', htmlInteractMode);
+}
+function setHtmlInteractMode(on){
+  htmlInteractMode = on;
+  const frame = stage.querySelector('.html-content-wrap');
+  if(frame) frame.style.pointerEvents = on ? 'auto' : 'none';
+  updateHtmlInteractButton();
+}
+document.getElementById('btnHtmlInteract').onclick = ()=> setHtmlInteractMode(!htmlInteractMode);
 
 function loadHtmlContent(text, name){
   if(!text || !text.trim()){
@@ -117,6 +136,9 @@ function loadHtmlContent(text, name){
   empty.style.display = 'none';
   currentName = name || null;
   currentHtmlSource = text;
+  htmlInteractMode = false; // 新しく読み込んだら毎回、安全な閲覧モードから始める
+  frame.style.pointerEvents = 'none';
+  updateHtmlInteractButton();
   fitToView();
 }
 

@@ -58,6 +58,8 @@ const LANG_JA = {
     btnNewGroup: '＋ グループ',
     btnStartSelectPrint: '☑️ 選んで印刷',
     btnStopSelectPrint: '✕ 選択をやめる',
+    htmlModeInteractLabel: '🖱 操作モード',
+    htmlModeViewLabel: '🔍 閲覧モード',
     printSelectCount: (n)=> `選択中: ${n}件`,
     btnPrintSelectGo: '🖨 印刷する',
     sheetClose: '閉じる',

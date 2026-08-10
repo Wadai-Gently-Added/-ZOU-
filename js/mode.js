@@ -61,6 +61,7 @@ function applyModeLabels(){
 
   // 選んで印刷バーの件数表示(現在の選択数を保ったまま文言だけ差し替え)
   if(typeof updatePrintSelectBar === 'function') updatePrintSelectBar();
+  if(typeof updateHtmlInteractButton === 'function') updateHtmlInteractButton();
 }
 
 // モードごとの表示状態を退避しておく置き場。タブを切り替えても中身を消さず、
@@ -108,6 +109,9 @@ function switchMode(mode){
   isDirty = toState.dirty;
   scale = toState.scale; tx = toState.tx; ty = toState.ty;
   applyTransform();
+
+  // HTMLへの切替時は毎回、安全な閲覧モード(iframeクリック不可)から始める
+  if(mode === 'html' && typeof setHtmlInteractMode === 'function') setHtmlInteractMode(false);
 
   renderList();
 }
