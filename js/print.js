@@ -62,9 +62,14 @@ function svgForThumbnail(code){
 }
 
 // 印刷の枠に埋め込む内容を用意する。SVGモードはgetBBoxでviewBoxを引き直して自動リサイズ、
-// HTMLモードはそのまま埋め込む(ページ全体のような複雑なHTMLは枠に収まりきらない場合がある)
+// HTMLモードはビューアと同様にsandbox化したiframeに隔離する(読み込んだHTML内のポップアップ等が
+// 印刷プレビュー画面ごと覆ってしまう事故を防ぐため。直接innerHTMLに差し込まない)
 function contentForThumbnail(code){
-  return currentMode === 'html' ? code : svgForThumbnail(code);
+  if(currentMode === 'html'){
+    const escaped = escHtml(code).replace(/"/g, '&quot;');
+    return `<iframe class="html-print-frame" sandbox="allow-scripts" srcdoc="${escaped}" style="width:100%;height:100%;border:none;"></iframe>`;
+  }
+  return svgForThumbnail(code);
 }
 
 // SVGコードから「サイズ」「ViewBox」の表示用テキストを取り出す
@@ -93,7 +98,7 @@ function getGroupNameOf(item){
 // withArrows=false にすると矢印を挟まない、ただの一覧(グリッド)として出力できる
 function buildFlowSection(items, withArrows){
   const cells = items.map((it, i)=>{
-    const nameEsc = escHtml(it.name || '(無題)');
+    const nameEsc = escHtml(it.name || STR.common.untitled);
     const groupName = getGroupNameOf(it);
     const groupLine = groupName ? `<div class="flow-group">${escHtml(groupName)}</div>` : '';
     return `
@@ -109,13 +114,13 @@ function buildFlowSection(items, withArrows){
     parts.push(c);
     if(withArrows && i < cells.length - 1) parts.push('<div class="flow-arrow">→</div>');
   });
-  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
-  const titleText = withArrows ? noun + ' 手順' : noun + ' 一覧';
+  const noun = STR.mode().groupItemsNoun;
+  const titleText = STR.common.flowTitle(noun, withArrows);
   return `
     <div class="print-page flow-page">
       <div class="print-title">${titleText}</div>
       <div class="flow-grid${withArrows ? '' : ' flow-grid-noarrow'}">${parts.join('')}</div>
-      <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
+      <div class="print-note-label">${STR.common.noteLabel}</div>
       <div class="print-note-box" contenteditable="true"></div>
     </div>
   `;
@@ -123,25 +128,25 @@ function buildFlowSection(items, withArrows){
 
 // 単品印刷用: 大きいプレビュー + メモ欄(SVGモードはサイズ/ViewBox表も付く)
 function buildSingleImageSection(item){
-  const nameEsc = escHtml(item.name || '(無題)');
+  const nameEsc = escHtml(item.name || STR.common.untitled);
   const isHtml = currentMode === 'html';
   const groupName = getGroupNameOf(item);
   const metaTable = isHtml ? '' : (()=>{
     const meta = getSvgMeta(item.content);
     return `
       <table class="code-list-table single-meta-table">
-        <tr><th>サイズ</th><td>${escHtml(meta.size)}</td></tr>
-        <tr><th>ViewBox</th><td>${escHtml(meta.viewBox)}</td></tr>
+        <tr><th>${STR.common.sizeLabel}</th><td>${escHtml(meta.size)}</td></tr>
+        <tr><th>${STR.common.viewBoxLabel}</th><td>${escHtml(meta.viewBox)}</td></tr>
       </table>`;
   })();
   return `
     <div class="print-page single-page">
       <div class="print-title">${nameEsc}</div>
-      ${groupName ? `<div class="print-meta">グループ: ${escHtml(groupName)}</div>` : ''}
-      <div class="print-meta">作成日時: ${fmtDate(item.savedAt)}</div>
+      ${groupName ? `<div class="print-meta">${STR.common.groupPrintLabel(escHtml(groupName))}</div>` : ''}
+      <div class="print-meta">${STR.common.createdAtLabel(fmtDate(item.savedAt))}</div>
       <div class="single-svg-frame">${contentForThumbnail(item.content)}</div>
       ${metaTable}
-      <div class="print-note-label">備考・メモ欄（タップして入力できるよ）</div>
+      <div class="print-note-label">${STR.common.noteLabel}</div>
       <div class="print-note-box" contenteditable="true"></div>
     </div>
   `;
@@ -150,12 +155,12 @@ function buildSingleImageSection(item){
 // コードモード: ファイル名+グループ+作成日時+修正日時の一覧表 → その下に各コード
 function buildCodeListSection(items){
   const rows = items.map((it,i)=>{
-    const nameEsc = escHtml(it.name || '(無題)');
+    const nameEsc = escHtml(it.name || STR.common.untitled);
     const groupName = getGroupNameOf(it);
     return `<tr><td>${i+1}</td><td>${nameEsc}</td><td>${groupName ? escHtml(groupName) : '-'}</td><td>${fmtDate(it.savedAt)}</td><td>${fmtDate(it.modifiedAt || it.savedAt)}</td></tr>`;
   }).join('');
   const entries = items.map((it,i)=>{
-    const nameEsc = escHtml(it.name || '(無題)');
+    const nameEsc = escHtml(it.name || STR.common.untitled);
     const codeEsc = escHtml(it.content);
     return `
       <div class="code-entry">
@@ -165,9 +170,9 @@ function buildCodeListSection(items){
   }).join('');
   return `
     <div class="print-page">
-      <div class="print-title">${currentMode === 'html' ? 'HTML' : 'SVG'} コード一覧</div>
+      <div class="print-title">${STR.common.codeListTitle(STR.mode().groupItemsNoun)}</div>
       <table class="code-list-table">
-        <thead><tr><th>#</th><th>ファイル名</th><th>グループ</th><th>作成日時</th><th>修正日時</th></tr></thead>
+        <thead><tr><th>#</th><th>${STR.common.fileNameHeader}</th><th>${STR.common.groupHeader}</th><th>${STR.common.createdHeader}</th><th>${STR.common.modifiedHeader}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       ${entries}
@@ -188,17 +193,17 @@ function buildPrintOutput(items, mode){
 }
 
 function printModeLabel(mode){
-  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
-  if(mode === 'image') return noun + '手順';
-  if(mode === 'image-grid') return noun + '一覧';
-  if(mode === 'code') return 'コード';
-  return noun + '＋コード';
+  const noun = STR.mode().groupItemsNoun;
+  if(mode === 'image') return STR.common.modeLabelImage(noun);
+  if(mode === 'image-grid') return STR.common.modeLabelImageGrid(noun);
+  if(mode === 'code') return STR.common.modeLabelCode;
+  return STR.common.modeLabelBoth(noun);
 }
 
 function openPrintSheet(html, title){
   closeAllSheets();
   document.getElementById('printArea').innerHTML = html;
-  document.getElementById('printSheetTitle').textContent = title || '印刷プレビュー';
+  document.getElementById('printSheetTitle').textContent = title || STR.common.printSheetTitleDefault;
   const area = document.getElementById('printArea');
   if(area) area.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -207,13 +212,13 @@ function openPrintSheet(html, title){
 
 // 単品印刷・選んで印刷・グループ一括印刷で共通の5択(チェックリストも含めて1つのメニューに統合)
 function printSubmenuOptions(onPick){
-  const noun = currentMode === 'html' ? 'HTML' : 'SVG';
+  const noun = STR.mode().groupItemsNoun;
   return [
-    { label: '☑️ チェックリスト印刷', onClick: ()=> onPick('checklist') },
-    { label: `🖼 ${noun}印刷(手順・矢印あり)`, onClick: ()=> onPick('image') },
-    { label: `📋 ${noun}一覧印刷(矢印なし)`, onClick: ()=> onPick('image-grid') },
-    { label: '🔤 コード印刷', onClick: ()=> onPick('code') },
-    { label: `🖼🔤 ${noun}＋コード印刷`, onClick: ()=> onPick('both') }
+    { label: STR.common.printOptChecklist, onClick: ()=> onPick('checklist') },
+    { label: STR.common.printOptImage(noun), onClick: ()=> onPick('image') },
+    { label: STR.common.printOptImageGrid(noun), onClick: ()=> onPick('image-grid') },
+    { label: STR.common.printOptCode, onClick: ()=> onPick('code') },
+    { label: STR.common.printOptBoth(noun), onClick: ()=> onPick('both') }
   ];
 }
 
@@ -226,16 +231,16 @@ function openSinglePrint(name, code, mode, meta){
     modifiedAt: (meta && meta.modifiedAt) || (meta && meta.savedAt) || now
   };
   if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(name, [item]), `${name || '(無題)'}　チェックリスト`);
+    openPrintSheet(buildChecklistHTML(name, [item]), STR.common.checklistTitle(name || STR.common.untitled));
     return;
   }
-  openPrintSheet(buildPrintOutput([item], mode), `${name || '(無題)'}　印刷（${printModeLabel(mode)}）`);
+  openPrintSheet(buildPrintOutput([item], mode), `${name || STR.common.untitled}　${printModeLabel(mode)}`);
 }
 
 function buildChecklistHTML(groupName, items){
   const dateText = new Date().toLocaleString('ja-JP');
   const rows = items.map((it,i)=>{
-    const nameEsc = escHtml(it.name || '(無題)');
+    const nameEsc = escHtml(it.name || STR.common.untitled);
     return `
       <div class="checklist-row">
         <span class="checklist-box">☐</span>
@@ -243,12 +248,12 @@ function buildChecklistHTML(groupName, items){
         <span class="checklist-name">${nameEsc}</span>
       </div>`;
   }).join('');
-  const nameEsc = escHtml(groupName || 'チェックリスト');
+  const nameEsc = escHtml(groupName || STR.common.checklistTitle(''));
   return `
     <div class="print-page checklist-page">
-      <div class="print-title">${nameEsc}　一覧</div>
-      <div class="print-meta">作成日時: ${dateText}</div>
-      <div class="print-meta">項目数: ${items.length}件</div>
+      <div class="print-title">${nameEsc}</div>
+      <div class="print-meta">${STR.common.createdAtLabel(dateText)}</div>
+      <div class="print-meta">${STR.common.itemCountLabel(items.length)}</div>
       <div class="checklist-list">${rows}</div>
     </div>`;
 }
@@ -258,20 +263,20 @@ function openGroupPrint(groupId, groupName, mode){
   const items = getSaved().filter(it => (it.group||null) === groupId);
   if(items.length === 0){ alert(STR.mode().noGroupItems); return; }
   if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(groupName, items), `${groupName || 'グループ'}　チェックリスト（全${items.length}件）`);
+    openPrintSheet(buildChecklistHTML(groupName, items), STR.common.checklistTitle(groupName || STR.common.untitled));
     return;
   }
-  openPrintSheet(buildPrintOutput(items, mode), `${groupName || 'グループ'}　一括印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  openPrintSheet(buildPrintOutput(items, mode), `${groupName || STR.common.untitled}　${printModeLabel(mode)}・${STR.common.itemCountLabel(items.length)}`);
 }
 
 // 選んだ項目だけをまとめて印刷する(グループを跨いだ選択にも対応)
 function openMultiPrint(items, mode, title){
   if(items.length === 0){ alert(STR.common.noSelection); return; }
   if(mode === 'checklist'){
-    openPrintSheet(buildChecklistHTML(title, items), `${title || '選択した項目'}　チェックリスト（全${items.length}件）`);
+    openPrintSheet(buildChecklistHTML(title, items), STR.common.checklistTitle(title || STR.common.untitled));
     return;
   }
-  openPrintSheet(buildPrintOutput(items, mode), `${title || '選択した項目'}　印刷（${printModeLabel(mode)}・全${items.length}件）`);
+  openPrintSheet(buildPrintOutput(items, mode), `${title || STR.common.untitled}　${printModeLabel(mode)}・${STR.common.itemCountLabel(items.length)}`);
 }
 
 // ---- 選んで印刷モード ----
@@ -299,14 +304,14 @@ function updatePrintSelectBar(){
   const bar = document.getElementById('printSelectBar');
   const startBtn = document.getElementById('btnStartSelectPrint');
   if(startBtn){
-    startBtn.textContent = printSelectActive ? '✕ 選択をやめる' : '☑️ 選んで印刷';
+    startBtn.textContent = printSelectActive ? STR.common.btnStopSelectPrint : STR.common.btnStartSelectPrint;
     startBtn.classList.toggle('active', printSelectActive);
   }
   if(!bar) return;
   if(!printSelectActive){ bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   const count = document.querySelectorAll('#savedList .print-select-box:checked').length;
-  document.getElementById('printSelectCount').textContent = `選択中: ${count}件`;
+  document.getElementById('printSelectCount').textContent = STR.common.printSelectCount(count);
 }
 
 function closePrintSheet(){

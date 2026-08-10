@@ -13,8 +13,8 @@
 <div id="app">
 
   <div id="modeTabs">
-    <button class="mode-tab active" id="tabSvg" data-mode="svg">SVGビューワー</button>
-    <button class="mode-tab" id="tabHtml" data-mode="html">HTMLビューワー</button>
+    <button class="mode-tab active" id="tabSvg" data-mode="svg"></button>
+    <button class="mode-tab" id="tabHtml" data-mode="html"></button>
     <select id="langSelect" title="Language">
       <option value="ja">JA</option>
       <option value="en">EN</option>
@@ -24,43 +24,43 @@
   <div id="topbar">
     <h1 id="appTitle">SVG VIEWER</h1>
     <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-      <button id="codeBtn" class="topbtn"><span id="codeBtnLabel">🖊 コード</span></button>
+      <button id="codeBtn" class="topbtn"><span id="codeBtnLabel"></span></button>
       <div class="pillgroup">
-        <button id="listBtn"><span id="listBtnLabel">📂 マイSVG</span></button>
-        <button id="btnSave">＋ 登録</button>
+        <button id="listBtn"><span id="listBtnLabel"></span></button>
+        <button id="btnSave"></button>
       </div>
     </div>
   </div>
 
   <div id="viewerWrap" class="bg-white">
     <div id="empty">
-      <div class="big" id="emptyBig">まだSVGが読み込まれていません</div>
-      <div id="emptySub">下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね</div>
+      <div class="big" id="emptyBig"></div>
+      <div id="emptySub"></div>
     </div>
     <div id="stage" style="display:none"></div>
   </div>
 
-  <button id="exitFocusBtn">⤢</button>
+  <button id="exitFocusBtn"></button>
 
   <div id="bottombar">
     <div class="row">
-      <button class="btn" id="btnClipboard">📋 クリップボード</button>
-      <button class="btn" id="btnPaste">✏️ 貼り付け</button>
-      <button class="btn" id="btnFile">📁 ファイル</button>
+      <button class="btn" id="btnClipboard"></button>
+      <button class="btn" id="btnPaste"></button>
+      <button class="btn" id="btnFile"></button>
     </div>
     <div class="row">
       <div class="bgtoggle" style="flex:1">
-        <button data-bg="checker">透過</button>
-        <button data-bg="white" class="active">白</button>
-        <button data-bg="black">黒</button>
+        <button data-bg="checker" id="bgBtnChecker"></button>
+        <button data-bg="white" class="active" id="bgBtnWhite"></button>
+        <button data-bg="black" id="bgBtnBlack"></button>
       </div>
-      <button class="btn small" id="btnZoomOut">−</button>
-      <button class="btn small" id="btnReset">⟲</button>
-      <button class="btn small" id="btnZoomIn">＋</button>
+      <button class="btn small" id="btnZoomOut"></button>
+      <button class="btn small" id="btnReset"></button>
+      <button class="btn small" id="btnZoomIn"></button>
     </div>
     <div class="row">
-      <button class="btn" id="btnWake">☀️ 常時点灯</button>
-      <button class="btn" id="btnFocus">👁 全体表示</button>
+      <button class="btn" id="btnWake"></button>
+      <button class="btn" id="btnFocus"></button>
     </div>
   </div>
 
@@ -72,11 +72,11 @@
 <div class="sheet-backdrop" id="pasteBackdrop"></div>
 <div class="sheet" id="pasteSheet">
   <h2 id="pasteSheetTitle">SVGコードを貼り付け</h2>
-  <textarea id="pasteBox" placeholder="&lt;svg&gt;...&lt;/svg&gt; をここにペースト"></textarea>
+  <textarea id="pasteBox" placeholder=""></textarea>
   <div class="row">
-    <button class="btn accent" id="btnPasteLoad">表示する</button>
+    <button class="btn accent" id="btnPasteLoad"></button>
   </div>
-  <div class="sheet-close" id="pasteCancel">閉じる</div>
+  <div class="sheet-close" id="pasteCancel"></div>
 </div>
 
 <!-- saved list sheet -->
@@ -85,41 +85,41 @@
   <h2 style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
     <span id="listSheetTitle">マイSVG</span>
     <span style="display:flex; gap:6px;">
-      <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;">＋ グループ</button>
-      <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;">☑️ 選んで印刷</button>
+      <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;"></button>
+      <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;"></button>
     </span>
   </h2>
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
-  <div id="savedEmpty" style="display:none">まだ何も保存されていません</div>
+  <div id="savedEmpty" style="display:none"></div>
   <div id="printSelectBar" style="display:none;">
-    <span id="printSelectCount">選択中: 0件</span>
-    <button id="btnPrintSelectGo" class="btn accent" style="flex:0 0 auto; padding:6px 12px;">🖨 印刷する</button>
-    <button id="btnPrintSelectCancel" class="btn" style="flex:0 0 auto; padding:6px 12px;">キャンセル</button>
+    <span id="printSelectCount"></span>
+    <button id="btnPrintSelectGo" class="btn accent" style="flex:0 0 auto; padding:6px 12px;"></button>
+    <button id="btnPrintSelectCancel" class="btn" style="flex:0 0 auto; padding:6px 12px;"></button>
   </div>
-  <div class="sheet-close" id="listCancel">閉じる</div>
+  <div class="sheet-close" id="listCancel"></div>
 </div>
 
 <!-- code edit sheet -->
 <div class="sheet-backdrop" id="codeBackdrop"></div>
 <div class="sheet" id="codeSheet" style="max-height:85vh">
   <h2 id="codeSheetTitle">SVGコードを編集</h2>
-  <textarea id="codeBox" style="height:220px" placeholder="表示中のSVGがありません"></textarea>
+  <textarea id="codeBox" style="height:220px" placeholder=""></textarea>
   <div class="row">
-    <button class="btn accent" id="btnCodeApply">反映する</button>
+    <button class="btn accent" id="btnCodeApply"></button>
   </div>
-  <div class="sheet-close" id="codeCancel">閉じる</div>
+  <div class="sheet-close" id="codeCancel"></div>
 </div>
 
 <!-- print sheet -->
 <div class="sheet-backdrop" id="printBackdrop"></div>
 <div class="sheet" id="printSheet" style="max-height:92vh">
   <h2 id="printSheetTitle">印刷プレビュー（2ページ構成）</h2>
-  <div class="print-hint">画面ではスクロールで確認できます。実際の印刷/PDFは全ページぶん出力されるよ</div>
+  <div class="print-hint" id="printHint"></div>
   <div id="printArea" style="background:#fff; border-radius:10px; overflow:auto; max-height:74vh; padding:4px;"></div>
   <div class="row">
-    <button class="btn accent" id="btnDoPrint">🖨 印刷する</button>
+    <button class="btn accent" id="btnDoPrint"></button>
   </div>
-  <div class="sheet-close" id="printCancel">閉じる</div>
+  <div class="sheet-close" id="printCancel"></div>
 </div>
 
 <script src="js/storage.js"></script>

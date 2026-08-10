@@ -1,10 +1,11 @@
-// language/ja.js — 日本語の文言データ
+// language/ja.js — 日本語の文言データ(UI全体・alert・メニュー・印刷レイアウトを網羅)
 // 依存: なし。js/strings.jsより先に読み込むこと(index.htmlの読み込み順を参照)。
 // 新しい言語を追加する時は、このファイルを丸ごとコピーして language/xx.js を作り、
 // 全キーの値を翻訳したうえで js/strings.js の LANGUAGES に登録すればOK。
 
 const LANG_JA = {
   common: {
+    // --- alert/confirm/prompt ---
     saveFailed: '保存に失敗しました（容量オーバーの可能性があります）',
     saveSuccess: '保存しました！',
     noSelection: '1件も選ばれていません',
@@ -25,7 +26,99 @@ const LANG_JA = {
     groupColorPickTitle: 'グループの色を選んでね',
     newGroupDefaultName: '新しいグループ',
     itemDeleteConfirm: (name)=> `「${name}」を削除する？元に戻せないよ`,
-    groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`
+    groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`,
+
+    // --- タブ / 言語 ---
+    tabSvg: 'SVGビューワー',
+    tabHtml: 'HTMLビューワー',
+
+    // --- 上部バー ---
+    codeBtn: '🖊 コード',
+    btnSaveLabel: '＋ 登録',
+
+    // --- 下部バー ---
+    btnClipboard: '📋 クリップボード',
+    btnPaste: '✏️ 貼り付け',
+    btnFile: '📁 ファイル',
+    bgChecker: '透過',
+    bgWhite: '白',
+    bgBlack: '黒',
+    btnZoomOut: '−',
+    btnReset: '⟲',
+    btnZoomIn: '＋',
+    btnWake: '☀️ 常時点灯',
+    btnFocus: '👁 全体表示',
+    exitFocusBtn: '⤢',
+
+    // --- 空状態(共通の補足文) ---
+    emptySub: '下のボタンから貼り付け・ファイル選択・クリップボードで読み込んでね',
+
+    // --- 貼り付けシート ---
+    btnPasteLoad: '表示する',
+
+    // --- マイSVG/マイHTMLシート ---
+    btnNewGroup: '＋ グループ',
+    btnStartSelectPrint: '☑️ 選んで印刷',
+    btnStopSelectPrint: '✕ 選択をやめる',
+    printSelectCount: (n)=> `選択中: ${n}件`,
+    btnPrintSelectGo: '🖨 印刷する',
+    sheetClose: '閉じる',
+
+    // --- コード編集シート ---
+    btnCodeApply: '反映する',
+
+    // --- 印刷シート ---
+    printSheetTitleDefault: '印刷プレビュー（2ページ構成）',
+    printHint: '画面ではスクロールで確認できます。実際の印刷/PDFは全ページぶん出力されるよ',
+    btnDoPrint: '🖨 印刷する',
+
+    // --- 右クリック/長押しメニュー(アイテム) ---
+    itemMenuRename: '✏️ 名前を変更',
+    itemMenuPrint: '🖨 印刷',
+    itemMenuNewGroup: '🆕 新しいグループを作る',
+    itemMenuMoveToGroup: (name)=> `📁 ${name} へ移動`,
+    itemMenuUngroup: '🚫 グループ解除',
+    itemMenuDelete: '🗑 削除',
+    noGroupOption: 'グループなし',
+    pinTitle: 'ピン留め',
+    dragHandleTitle: 'ドラッグで並べ替え / 別グループへ移動',
+    dragHandleTitleGroup: 'ドラッグで並べ替え',
+
+    // --- 右クリック/長押しメニュー(グループ) ---
+    groupMenuColor: '🎨 色を変える',
+    groupMenuChecklist: '☑️ チェックリスト印刷',
+    groupMenuSelectPrint: '☑️ 選んで印刷',
+    groupMenuDelete: '🗑 グループ削除',
+
+    // --- 印刷メニューの選択肢 ---
+    printOptChecklist: '☑️ チェックリスト印刷',
+    printOptImage: (noun)=> `🖼 ${noun}印刷(手順・矢印あり)`,
+    printOptImageGrid: (noun)=> `📋 ${noun}一覧印刷(矢印なし)`,
+    printOptCode: '🔤 コード印刷',
+    printOptBoth: (noun)=> `🖼🔤 ${noun}＋コード印刷`,
+    modeLabelImage: (noun)=> noun + '手順',
+    modeLabelImageGrid: (noun)=> noun + '一覧',
+    modeLabelCode: 'コード',
+    modeLabelBoth: (noun)=> noun + '＋コード',
+
+    // --- 印刷レイアウト ---
+    flowTitle: (noun, withArrows)=> withArrows ? (noun + ' 手順') : (noun + ' 一覧'),
+    codeListTitle: (noun)=> noun + ' コード一覧',
+    noteLabel: '備考・メモ欄（タップして入力できるよ）',
+    sizeLabel: 'サイズ',
+    viewBoxLabel: 'ViewBox',
+    groupPrintLabel: (name)=> `グループ: ${name}`,
+    createdAtLabel: (date)=> `作成日時: ${date}`,
+    fileNameHeader: 'ファイル名',
+    groupHeader: 'グループ',
+    createdHeader: '作成日時',
+    modifiedHeader: '修正日時',
+    itemCountLabel: (n)=> `項目数: ${n}件`,
+    checklistTitle: (name)=> `${name}　一覧`,
+    untitled: '(無題)',
+    selectedItemsTitle: '選択した項目',
+    fromClipboardName: 'クリップボードから',
+    manualPasteName: '手動貼り付け'
   },
   svg: {
     appTitle: 'SVG VIEWER',

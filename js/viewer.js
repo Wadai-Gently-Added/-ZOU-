@@ -16,7 +16,7 @@ function applyTransform(){
   stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 
-// SVGモードはgetBBox(SVG自身の座標系)、HTMLモードは実際のレンダリングサイズ(getBoundingClientRect)
+// SVGモードはgetBBox(SVG自身の座標系)、HTMLモードはiframeの固定サイズ(HTML_FRAME_WIDTH/HEIGHT)
 // を使って、内容が枠の86%に収まるよう自動でスケール・中央寄せする
 function fitToView(){
   const isHtml = currentMode === 'html';
@@ -25,10 +25,8 @@ function fitToView(){
 
   let box = null;
   if(isHtml){
-    // 実寸を測るため、既存の変形を一旦リセットしてから計測する
-    scale = 1; tx = 0; ty = 0; applyTransform();
-    const r = targetEl.getBoundingClientRect();
-    if(r.width && r.height) box = { x: 0, y: 0, width: r.width, height: r.height };
+    // iframeはCSSで固定サイズにしてあるので、実測せずその値をそのまま使う
+    box = { x: 0, y: 0, width: HTML_FRAME_WIDTH, height: HTML_FRAME_HEIGHT };
   } else {
     try{ box = targetEl.getBBox(); }catch(e){}
   }
@@ -90,21 +88,35 @@ function loadSvgContent(text, name){
   fitToView();
 }
 
-// HTMLモード: SVGのような厳密なタグ抽出はせず、そのままラッパーに流し込んで表示する
-// (ユーザー自身が作った/持ち込んだHTMLを信頼する前提。スクリプトも実行される)
+// HTMLモード: 読み込んだHTMLをそのままメイン画面に埋め込むと、そのHTML内のポップアップや
+// 固定表示要素がうちのアプリのUIごと覆ってしまう事故が起きるため、iframe(sandbox属性つき)に
+// 完全隔離して表示する。読み込んだHTML側のCSS/JSがアプリ本体に一切影響しない。
+// currentHtmlSource に元のテキストを保持しておき、保存/ダウンロード/コード編集はそちらを使う
+// (sandbox="allow-scripts"のみでallow-same-originを付けないため、iframeの中身をJSから
+//  直接読み返すことはできない設計)
+let currentHtmlSource = null;
+const HTML_FRAME_WIDTH = 1280;
+const HTML_FRAME_HEIGHT = 800;
+
 function loadHtmlContent(text, name){
   if(!text || !text.trim()){
     alert(STR.html.parseError);
     return;
   }
   stage.innerHTML = '';
-  const wrapEl = document.createElement('div');
-  wrapEl.className = 'html-content-wrap';
-  wrapEl.innerHTML = text;
-  stage.appendChild(wrapEl);
+  const frame = document.createElement('iframe');
+  frame.className = 'html-content-wrap';
+  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.style.width = HTML_FRAME_WIDTH + 'px';
+  frame.style.height = HTML_FRAME_HEIGHT + 'px';
+  frame.style.border = 'none';
+  frame.style.display = 'block';
+  frame.srcdoc = text;
+  stage.appendChild(frame);
   stage.style.display = 'block';
   empty.style.display = 'none';
   currentName = name || null;
+  currentHtmlSource = text;
   fitToView();
 }
 
@@ -194,7 +206,7 @@ document.querySelectorAll('.bgtoggle button').forEach(btn=>{
 document.getElementById('btnClipboard').onclick = async ()=>{
   try{
     const text = await navigator.clipboard.readText();
-    guardedLoad(()=>{ loadContent(text, 'クリップボードから'); isDirty = true; });
+    guardedLoad(()=>{ loadContent(text, STR.common.fromClipboardName); isDirty = true; });
   }catch(err){
     alert(STR.common.clipboardReadFailed);
   }
@@ -211,7 +223,7 @@ pasteBackdrop.onclick = closePaste;
 document.getElementById('btnPasteLoad').onclick = ()=>{
   const val = document.getElementById('pasteBox').value;
   closePaste();
-  guardedLoad(()=>{ loadContent(val, '手動貼り付け'); isDirty = true; });
+  guardedLoad(()=>{ loadContent(val, STR.common.manualPasteName); isDirty = true; });
 };
 
 /* ---- file input ---- */
@@ -231,8 +243,9 @@ function hasStageContent(){
 }
 function currentContentString(){
   if(currentMode === 'html'){
-    const el = stage.querySelector('.html-content-wrap');
-    return el ? el.innerHTML : null; // ラッパー自体は含めない(保存/読込を繰り返しても二重に包まれないように)
+    // iframeはsandbox(allow-same-origin無し)で中身を読み返せないため、
+    // 読込時に保持しておいた元テキスト(currentHtmlSource)をそのまま使う
+    return currentHtmlSource;
   }
   const el = stage.querySelector('svg');
   return el ? el.outerHTML : null;
@@ -276,7 +289,7 @@ wrap.addEventListener('contextmenu', (ev)=>{
       if(saveCurrent()) alert(STR.common.saveSuccess);
     }},
     { label: STR.mode().downloadMenu, onClick: downloadCurrentFile },
-    { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+    { label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
       const content = currentContentString();
       if(!content){ alert(STR.mode().noStageContent); return; }
       openSinglePrint(currentName, content, mode);

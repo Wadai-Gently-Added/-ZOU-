@@ -323,8 +323,8 @@ function buildItemRow(item, i, groups, isTopLevel){
   const inSelectMode = printSelectActive;
   const handleHtml = inSelectMode
     ? `<input type="checkbox" class="print-select-box" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
-    : '<span class="handle" title="ドラッグで並べ替え / 別グループへ移動">⠿</span>';
-  const options = ['<option value="">グループなし</option>']
+    : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
+  const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
   const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
   row.innerHTML = `
@@ -335,7 +335,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
     </div>
     <select class="group-select">${options.join('')}</select>
-    <button class="pin" title="ピン留め">${item.pinned ? '📌' : '📍'}</button>
+    <button class="pin" title="${STR.common.pinTitle}">${item.pinned ? '📌' : '📍'}</button>
   `;
   if(inSelectMode){
     const box = row.querySelector('.print-select-box');
@@ -372,7 +372,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     suppressClickUntil = Date.now() + 500;
     const allGroups = getGroups();
     const opts = [];
-    opts.push({ label: '✏️ 名前を変更', onClick: ()=>{
+    opts.push({ label: STR.common.itemMenuRename, onClick: ()=>{
       const newName = prompt(STR.common.itemRenamePrompt, item.name);
       if(newName === null || !newName.trim()) return;
       const cur = getSaved();
@@ -381,13 +381,13 @@ function buildItemRow(item, i, groups, isTopLevel){
       setSaved(cur);
       renderList();
     }});
-    opts.push({ label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+    opts.push({ label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
       openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
     })});
-    opts.push({ label: '☑️ 選んで印刷', onClick: ()=>{
+    opts.push({ label: STR.common.groupMenuSelectPrint, onClick: ()=>{
       enterPrintSelectMode();
     }});
-    opts.push({ label: '🆕 新しいグループを作る', onClick: ()=>{
+    opts.push({ label: STR.common.itemMenuNewGroup, onClick: ()=>{
       const name = prompt(STR.common.groupNamePrompt, STR.common.newGroupDefaultName);
       if(!name || !name.trim()) return;
       pickGroupColor((color)=>{
@@ -404,17 +404,17 @@ function buildItemRow(item, i, groups, isTopLevel){
     }});
     allGroups.forEach(g=>{
       if((item.group||null) !== g.id){
-        opts.push({ label: `📁 ${g.name} へ移動`, onClick: ()=>{
+        opts.push({ label: STR.common.itemMenuMoveToGroup(g.name), onClick: ()=>{
           const cur = getSaved(); const it = cur.find(x=>x.id===item.id); if(it) it.group = g.id; setSaved(cur); renderList();
         }});
       }
     });
     if(item.group){
-      opts.push({ label: '🚫 グループ解除', onClick: ()=>{
+      opts.push({ label: STR.common.itemMenuUngroup, onClick: ()=>{
         const cur = getSaved(); const it = cur.find(x=>x.id===item.id); if(it) it.group = null; setSaved(cur); renderList();
       }});
     }
-    opts.push({ label: '🗑 削除', onClick: ()=>{
+    opts.push({ label: STR.common.itemMenuDelete, onClick: ()=>{
       if(!confirm(STR.common.itemDeleteConfirm(item.name))) return;
       const cur = getSaved().filter(x=>x.id!==item.id);
       setSaved(cur);
@@ -463,7 +463,7 @@ function renderList(){
       header.className = 'group-header';
       header.dataset.groupId = g.id;
       header.innerHTML = `
-        <span class="group-handle" title="ドラッグで並べ替え">⠿</span>
+        <span class="group-handle" title="${STR.common.dragHandleTitleGroup}">⠿</span>
         <button class="group-toggle">${g.collapsed ? '▶' : '▼'}</button>
         <span class="group-name">${g.name}</span>
       `;
@@ -478,23 +478,23 @@ function renderList(){
         ev.preventDefault();
         suppressClickUntil = Date.now() + 500;
         showContextMenu(ev.clientX, ev.clientY, [
-          { label: '✏️ 名前を変更', onClick: ()=>{
+          { label: STR.common.itemMenuRename, onClick: ()=>{
             const newName = prompt(STR.common.groupRenamePrompt, g.name);
             if(newName && newName.trim()){ g.name = newName.trim(); setGroups(groups); renderList(); }
           }},
-          { label: '🎨 色を変える', onClick: ()=>{
+          { label: STR.common.groupMenuColor, onClick: ()=>{
             pickGroupColor((color)=>{
               g.color = color; setGroups(groups); renderList();
             });
           }},
-          { label: '🖨 印刷', submenu: printSubmenuOptions((mode)=>{
+          { label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
             closeList();
             openGroupPrint(g.id, g.name, mode);
           })},
-          { label: '☑️ 選んで印刷', onClick: ()=>{
+          { label: STR.common.groupMenuSelectPrint, onClick: ()=>{
             enterPrintSelectMode();
           }},
-          { label: '🗑 グループ削除', onClick: ()=>{
+          { label: STR.common.groupMenuDelete, onClick: ()=>{
             if(!confirm(STR.common.groupDeleteConfirm(g.name, STR.mode().groupItemsNoun))) return;
             const cur = getSaved();
             cur.forEach(it=>{ if(it.group === g.id) it.group = null; });
@@ -555,7 +555,7 @@ document.getElementById('btnPrintSelectGo').onclick = (ev)=>{
     showPrintFlyoutFromButton(ev.currentTarget, (mode)=>{
       exitPrintSelectMode();
       closeList();
-      openMultiPrint(items, mode, '選択した項目');
+      openMultiPrint(items, mode, STR.common.selectedItemsTitle);
     });
   }catch(err){
     alert(STR.common.printMenuError(err && err.message ? err.message : err));

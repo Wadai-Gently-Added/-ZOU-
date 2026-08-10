@@ -1,10 +1,11 @@
-// language/en.js — English text data
+// language/en.js — English text data (covers the full UI, alerts, menus, print layouts)
 // Depends on: nothing. Load before js/strings.js (see load order in index.html).
 // To add a new language: copy this file to language/xx.js, translate every value,
 // then register it in the LANGUAGES map in js/strings.js.
 
 const LANG_EN = {
   common: {
+    // --- alert/confirm/prompt ---
     saveFailed: 'Save failed (storage may be full)',
     saveSuccess: 'Saved!',
     noSelection: 'No items selected',
@@ -25,7 +26,99 @@ const LANG_EN = {
     groupColorPickTitle: 'Choose a group color',
     newGroupDefaultName: 'New Group',
     itemDeleteConfirm: (name)=> `Delete "${name}"? This cannot be undone`,
-    groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`
+    groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`,
+
+    // --- tabs / language ---
+    tabSvg: 'SVG Viewer',
+    tabHtml: 'HTML Viewer',
+
+    // --- top bar ---
+    codeBtn: '🖊 Code',
+    btnSaveLabel: '＋ Save',
+
+    // --- bottom bar ---
+    btnClipboard: '📋 Clipboard',
+    btnPaste: '✏️ Paste',
+    btnFile: '📁 File',
+    bgChecker: 'Transparent',
+    bgWhite: 'White',
+    bgBlack: 'Black',
+    btnZoomOut: '−',
+    btnReset: '⟲',
+    btnZoomIn: '＋',
+    btnWake: '☀️ Keep Awake',
+    btnFocus: '👁 Full Screen',
+    exitFocusBtn: '⤢',
+
+    // --- empty state (shared hint text) ---
+    emptySub: 'Use the buttons below to paste, choose a file, or load from the clipboard',
+
+    // --- paste sheet ---
+    btnPasteLoad: 'Show',
+
+    // --- My SVGs / My HTML sheet ---
+    btnNewGroup: '＋ Group',
+    btnStartSelectPrint: '☑️ Select & Print',
+    btnStopSelectPrint: '✕ Cancel Selection',
+    printSelectCount: (n)=> `Selected: ${n}`,
+    btnPrintSelectGo: '🖨 Print',
+    sheetClose: 'Close',
+
+    // --- code edit sheet ---
+    btnCodeApply: 'Apply',
+
+    // --- print sheet ---
+    printSheetTitleDefault: 'Print Preview (2 pages)',
+    printHint: 'You can scroll to check the preview here. The actual print/PDF output includes every page',
+    btnDoPrint: '🖨 Print',
+
+    // --- context/long-press menu (item) ---
+    itemMenuRename: '✏️ Rename',
+    itemMenuPrint: '🖨 Print',
+    itemMenuNewGroup: '🆕 Create new group',
+    itemMenuMoveToGroup: (name)=> `📁 Move to ${name}`,
+    itemMenuUngroup: '🚫 Remove from group',
+    itemMenuDelete: '🗑 Delete',
+    noGroupOption: 'No group',
+    pinTitle: 'Pin',
+    dragHandleTitle: 'Drag to reorder / move to another group',
+    dragHandleTitleGroup: 'Drag to reorder',
+
+    // --- context/long-press menu (group) ---
+    groupMenuColor: '🎨 Change color',
+    groupMenuChecklist: '☑️ Print checklist',
+    groupMenuSelectPrint: '☑️ Select & Print',
+    groupMenuDelete: '🗑 Delete group',
+
+    // --- print menu options ---
+    printOptChecklist: '☑️ Print checklist',
+    printOptImage: (noun)=> `🖼 Print ${noun} (steps, with arrows)`,
+    printOptImageGrid: (noun)=> `📋 Print ${noun} list (no arrows)`,
+    printOptCode: '🔤 Print code',
+    printOptBoth: (noun)=> `🖼🔤 Print ${noun} + code`,
+    modeLabelImage: (noun)=> noun + ' steps',
+    modeLabelImageGrid: (noun)=> noun + ' list',
+    modeLabelCode: 'Code',
+    modeLabelBoth: (noun)=> noun + ' + code',
+
+    // --- print layouts ---
+    flowTitle: (noun, withArrows)=> withArrows ? (noun + ' Steps') : (noun + ' List'),
+    codeListTitle: (noun)=> noun + ' Code List',
+    noteLabel: 'Notes (tap to type — this is included when printed)',
+    sizeLabel: 'Size',
+    viewBoxLabel: 'ViewBox',
+    groupPrintLabel: (name)=> `Group: ${name}`,
+    createdAtLabel: (date)=> `Created: ${date}`,
+    fileNameHeader: 'Name',
+    groupHeader: 'Group',
+    createdHeader: 'Created',
+    modifiedHeader: 'Modified',
+    itemCountLabel: (n)=> `${n} item(s)`,
+    checklistTitle: (name)=> `${name} — Checklist`,
+    untitled: '(Untitled)',
+    selectedItemsTitle: 'Selected items',
+    fromClipboardName: 'From clipboard',
+    manualPasteName: 'Manual paste'
   },
   svg: {
     appTitle: 'SVG VIEWER',

@@ -94,7 +94,7 @@ html,body{
 }
 #stage svg{ display:block; max-width:none; }
 /* HTMLモード: 内容の実寸で測れるようshrink-to-fitにする(fitToViewの計測に必要) */
-.html-content-wrap{ display:inline-block; }
+.html-content-wrap{ display:block; background:#fff; }
 
 #empty{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
