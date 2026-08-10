@@ -185,9 +185,21 @@ wrap.addEventListener('pointerup', e=>{
   lastTap = now;
 });
 
-/* ---- zoom buttons ---- */
-document.getElementById('btnZoomIn').onclick = ()=>{ scale = Math.min(20, scale*1.3); applyTransform(); };
-document.getElementById('btnZoomOut').onclick = ()=>{ scale = Math.max(0.05, scale/1.3); applyTransform(); };
+/* ---- wheel zoom (PC向け。カーソル位置を中心に拡大縮小) ---- */
+wrap.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.08 : 1/1.08;
+  const newScale = Math.min(20, Math.max(0.05, scale * factor));
+  const rect = wrap.getBoundingClientRect();
+  const cx = e.clientX - rect.left - rect.width/2;
+  const cy = e.clientY - rect.top - rect.height/2;
+  tx = cx - (cx - tx) * (newScale/scale);
+  ty = cy - (cy - ty) * (newScale/scale);
+  scale = newScale;
+  applyTransform();
+}, { passive:false });
+
+/* ---- zoom/reset ---- */
 document.getElementById('btnReset').onclick = fitToView;
 
 /* ---- background toggle ---- */

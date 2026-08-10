@@ -26,9 +26,7 @@ function applyModeLabels(){
   document.getElementById('bgBtnChecker').textContent = C.bgChecker;
   document.getElementById('bgBtnWhite').textContent = C.bgWhite;
   document.getElementById('bgBtnBlack').textContent = C.bgBlack;
-  document.getElementById('btnZoomOut').textContent = C.btnZoomOut;
   document.getElementById('btnReset').textContent = C.btnReset;
-  document.getElementById('btnZoomIn').textContent = C.btnZoomIn;
   document.getElementById('btnWake').textContent = C.btnWake;
   document.getElementById('btnFocus').textContent = C.btnFocus;
 
@@ -65,29 +63,53 @@ function applyModeLabels(){
   if(typeof updatePrintSelectBar === 'function') updatePrintSelectBar();
 }
 
+// モードごとの表示状態を退避しておく置き場。タブを切り替えても中身を消さず、
+// 元のモードに戻ってきた時にそのまま復元できるようにする
+const modeState = {
+  svg:  { node: null, name: null, htmlSource: null, scale: 1, tx: 0, ty: 0, dirty: false },
+  html: { node: null, name: null, htmlSource: null, scale: 1, tx: 0, ty: 0, dirty: false }
+};
+
 function switchMode(mode){
   if(mode === currentMode) return;
-  const doSwitch = ()=>{
-    currentMode = mode;
-    document.querySelectorAll('.mode-tab').forEach(t=>{
-      t.classList.toggle('active', t.dataset.mode === mode);
-    });
-    applyModeLabels();
-    // 表示中の内容はモードを跨いで意味を持たないためクリアする
-    stage.innerHTML = '';
+
+  // 今のモードの状態を退避(DOMノードは消さずに保持するだけ。iframeの中身もそのまま保たれる)
+  const fromState = modeState[currentMode];
+  fromState.name = currentName;
+  fromState.htmlSource = currentHtmlSource;
+  fromState.scale = scale; fromState.tx = tx; fromState.ty = ty;
+  fromState.dirty = isDirty;
+  fromState.node = stage.firstElementChild || null;
+  if(fromState.node) stage.removeChild(fromState.node);
+
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  applyModeLabels();
+
+  // 選んで印刷中だった場合は状態をリセット(選択対象がモードを跨いで意味を持たないため)
+  if(typeof printSelectActive !== 'undefined' && printSelectActive) exitPrintSelectMode();
+  closeAllSheets();
+
+  // 切り替え先の状態を復元
+  const toState = modeState[mode];
+  stage.innerHTML = '';
+  if(toState.node){
+    stage.appendChild(toState.node);
+    stage.style.display = 'block';
+    empty.style.display = 'none';
+  } else {
     stage.style.display = 'none';
     empty.style.display = 'flex';
-    currentName = null;
-    currentHtmlSource = null;
-    isDirty = false;
-    scale = 1; tx = 0; ty = 0;
-    applyTransform();
-    // 選んで印刷中だった場合は状態をリセット
-    if(typeof printSelectActive !== 'undefined' && printSelectActive) exitPrintSelectMode();
-    closeAllSheets();
-    renderList();
-  };
-  guardedLoad(doSwitch);
+  }
+  currentName = toState.name;
+  currentHtmlSource = toState.htmlSource;
+  isDirty = toState.dirty;
+  scale = toState.scale; tx = toState.tx; ty = toState.ty;
+  applyTransform();
+
+  renderList();
 }
 
 document.getElementById('tabSvg').onclick = ()=> switchMode('svg');
