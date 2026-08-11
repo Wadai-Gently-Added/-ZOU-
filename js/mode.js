@@ -74,6 +74,12 @@ const modeState = {
 function switchMode(mode){
   if(mode === currentMode) return;
 
+  // 操作モード中だとiframeが#interactStage側にあり#stageが空になっているため、
+  // 退避する前に必ず閲覧モードへ戻して#stageにフレームを戻しておく
+  if(currentMode === 'html' && typeof htmlInteractMode !== 'undefined' && htmlInteractMode && typeof setHtmlInteractMode === 'function'){
+    setHtmlInteractMode(false);
+  }
+
   // 今のモードの状態を退避(DOMノードは消さずに保持するだけ。iframeの中身もそのまま保たれる)
   const fromState = modeState[currentMode];
   fromState.name = currentName;

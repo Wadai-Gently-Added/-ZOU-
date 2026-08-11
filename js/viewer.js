@@ -109,21 +109,30 @@ function updateHtmlInteractButton(){
   btn.textContent = htmlInteractMode ? STR.common.htmlModeViewLabel : STR.common.htmlModeInteractLabel;
   btn.classList.toggle('active', htmlInteractMode);
 }
-let savedViewTransform = null; // 操作モード中に退避しておくズーム/位置(戻る時に復元する)
+
+// 操作モードの実体: iframeを#stage(拡大縮小のtransformがかかっている)から、
+// transformの影響を一切受けない#interactStageへ物理的に移動させる。
+// スケール1にリセットするだけでは、ブラウザによっては祖先のtranslateだけでも
+// ネイティブのプルダウン位置がズレることがあるため、要素ごと外に出すのが確実。
+const interactStage = document.getElementById('interactStage');
 function setHtmlInteractMode(on){
   htmlInteractMode = on;
-  const frame = stage.querySelector('.html-content-wrap');
-  if(frame) frame.style.pointerEvents = on ? 'auto' : 'none';
+  const frame = on ? interactStage.querySelector('.html-content-wrap') : stage.querySelector('.html-content-wrap');
+  if(!frame){ updateHtmlInteractButton(); return; }
+  frame.style.pointerEvents = 'auto'; // 移動先ではどちらの場合も直接操作可能にする
   if(on){
-    // ネイティブのプルダウン等はCSSの拡大縮小を考慮せず本来のサイズの位置に開いてしまうため、
-    // 操作モード中はズームを一旦100%に戻す(位置ズレ対策)。今の位置は退避しておいて後で戻す
-    savedViewTransform = { scale, tx, ty };
-    scale = 1; tx = -HTML_FRAME_WIDTH/2; ty = -HTML_FRAME_HEIGHT/2;
-    applyTransform();
-  } else if(savedViewTransform){
-    scale = savedViewTransform.scale; tx = savedViewTransform.tx; ty = savedViewTransform.ty;
-    savedViewTransform = null;
-    applyTransform();
+    frame.style.width = '';
+    frame.style.height = '';
+    interactStage.appendChild(frame);
+    interactStage.style.display = 'block';
+    stage.style.display = 'none';
+  } else {
+    frame.style.pointerEvents = 'none';
+    frame.style.width = HTML_FRAME_WIDTH + 'px';
+    frame.style.height = HTML_FRAME_HEIGHT + 'px';
+    stage.appendChild(frame);
+    interactStage.style.display = 'none';
+    stage.style.display = 'block';
   }
   updateHtmlInteractButton();
 }
