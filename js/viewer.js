@@ -116,8 +116,10 @@ function updateHtmlInteractButton(){
 // ネイティブのプルダウン位置がズレることがあるため、要素ごと外に出すのが確実。
 const interactStage = document.getElementById('interactStage');
 function setHtmlInteractMode(on){
+  if(on === htmlInteractMode){ updateHtmlInteractButton(); return; }
+  // frameは「切り替え前の現在地」から探す(on=trueにする時点ではまだ#stage側にいる)
+  const frame = htmlInteractMode ? interactStage.querySelector('.html-content-wrap') : stage.querySelector('.html-content-wrap');
   htmlInteractMode = on;
-  const frame = on ? interactStage.querySelector('.html-content-wrap') : stage.querySelector('.html-content-wrap');
   if(!frame){ updateHtmlInteractButton(); return; }
   frame.style.pointerEvents = 'auto'; // 移動先ではどちらの場合も直接操作可能にする
   if(on){

@@ -1,6 +1,6 @@
 # SVG/HTML Viewer — ファイル構成
 
-最終更新: 2026-08-05（操作モードのプルダウン位置ズレを根本対応: iframeをtransformの効かない#interactStageへ物理的に移動する方式に変更）
+最終更新: 2026-08-05（バグ修正: 消し忘れ参照によるラベル設定の途中停止、操作モード切替が実は機能していなかった問題を修正。再発防止のsetTextヘルパー導入）
 
 ```
 svg-viewer/
@@ -140,3 +140,8 @@ svg-viewer/
 - 操作モードON: `.html-content-wrap`(iframe)を`#stage`→`#interactStage`へ`appendChild`で移動し、サイズを100%/100%(interactStageに追従)に変更、`#stage`を隠して`#interactStage`を表示
 - 操作モードOFF: 逆方向に移動、サイズを1280×800固定に戻す
 - `js/mode.js`の`switchMode()`: タブ切替前に操作モード中なら強制的に閲覧モードへ戻し(フレームを`#stage`に戻してから)退避するよう変更。操作モード中に`#interactStage`側にフレームがある状態でタブを切り替えると見失うバグを防止。
+
+## バグ修正: ラベルが一部だけ空白になる/操作モードが実は動いてなかった
+1. **⟲ボタン削除時の消し忘れ**: `#btnReset`ボタンをHTMLから削除した際、`js/mode.js`の`applyModeLabels()`内に`document.getElementById('btnReset').textContent = ...`という参照が残っており、存在しない要素への操作で例外が発生 → **それ以降に書かれていた`btnWake`/`btnFocus`のラベル設定が実行されずに終わっていた**(iPhone実機で☀️/👁ボタンが空白になっていた原因)。該当行を削除して解消。
+2. **操作モード切替が実は機能していなかった**: `setHtmlInteractMode(on)`内で、iframeを探す対象を`on`(これから入るモード)を基準に判定していたが、実際にはまだ移動する前で「切り替え前の現在地」にいるため、常に`interactStage`側(まだ何もない)を探してしまい早期returnしていた。切り替え前の`htmlInteractMode`(現在地)を基準に探すよう修正。
+3. **再発防止策**: `applyModeLabels()`を`document.getElementById(id).textContent = ...`の直書きから、要素が見つからなくても例外を出さない`setText(id, val)`/`setPlaceholder(id, val)`ヘルパー経由に統一。今後HTML側の要素を削除/リネームした際に、その1行だけ無視されて他のラベル設定は止まらなくなる。
