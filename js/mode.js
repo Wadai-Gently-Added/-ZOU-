@@ -33,6 +33,7 @@ function applyModeLabels(){
   setText('bgBtnBlack', C.bgBlack);
   setText('btnWake', C.btnWake);
   setText('btnFocus', C.btnFocus);
+  setText('btnDownloadFile', L.downloadMenu);
 
   // 貼り付けシート
   setText('pasteSheetTitle', L.pasteSheetTitle);

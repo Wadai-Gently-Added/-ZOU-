@@ -338,6 +338,8 @@ document.getElementById('btnSave').onclick = ()=>{
   if(saveCurrent()) alert(STR.common.saveSuccess);
 };
 
+document.getElementById('btnDownloadFile').onclick = downloadCurrentFile;
+
 wrap.addEventListener('contextmenu', (ev)=>{
   if(!hasStageContent()) return;
   ev.preventDefault();
