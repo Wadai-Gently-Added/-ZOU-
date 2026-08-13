@@ -17,7 +17,16 @@
 
 const LANGUAGES = {
   ja: LANG_JA,
-  en: LANG_EN
+  en: LANG_EN,
+  es: LANG_ES,
+  fr: LANG_FR,
+  ko: LANG_KO,
+  zh: LANG_ZH,
+  de: LANG_DE,
+  it: LANG_IT,
+  pt: LANG_PT,
+  ru: LANG_RU,
+  el: LANG_EL
 };
 
 let currentLanguage = 'ja';

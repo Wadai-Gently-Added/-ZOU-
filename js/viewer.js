@@ -418,8 +418,12 @@ function downloadCurrentFile(){
 }
 
 /* ---- wake lock (常時点灯) ---- */
+// maxTouchPointsだけだとタッチ対応のWindows PCなどでも真になってしまうため、
+// 「hover(マウス/トラックパッド)を持たない」を追加条件にしてスマホ限定にする
 const wakeBtn = document.getElementById('btnWake');
-const wakeSupported = ('wakeLock' in navigator) && ((navigator.maxTouchPoints || 0) > 0);
+const wakeSupported = ('wakeLock' in navigator)
+  && ((navigator.maxTouchPoints || 0) > 0)
+  && !window.matchMedia('(hover: hover)').matches;
 if(!wakeSupported){
   wakeBtn.style.display = 'none';
 }
