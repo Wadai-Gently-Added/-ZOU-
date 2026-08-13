@@ -418,12 +418,11 @@ function downloadCurrentFile(){
 }
 
 /* ---- wake lock (常時点灯) ---- */
-// maxTouchPointsだけだとタッチ対応のWindows PCなどでも真になってしまうため、
-// 「hover(マウス/トラックパッド)を持たない」を追加条件にしてスマホ限定にする
+// 「主な操作方法が指(coarse pointer)かどうか」で判定する。PCはマウス/トラックパッドが
+// 主入力になるのでpointer:fineになり、タッチ対応PCでも誤って表示されにくい
 const wakeBtn = document.getElementById('btnWake');
 const wakeSupported = ('wakeLock' in navigator)
-  && ((navigator.maxTouchPoints || 0) > 0)
-  && !window.matchMedia('(hover: hover)').matches;
+  && window.matchMedia('(pointer: coarse)').matches;
 if(!wakeSupported){
   wakeBtn.style.display = 'none';
 }

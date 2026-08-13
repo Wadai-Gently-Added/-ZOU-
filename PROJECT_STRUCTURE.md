@@ -1,6 +1,6 @@
 # SVG/HTML Viewer — ファイル構成
 
-最終更新: 2026-08-05（11言語対応: ja/en/es/fr/ko/zh/de/it/pt/ru/el。常時点灯ボタンがPCでも表示されるバグを修正、ファイル保存ボタンを復活）
+最終更新: 2026-08-06（常時点灯の判定方法を再修正(pointer:coarseベース)、下部バーのレイアウトを圧縮(1列にまとめる、絵文字アイコン表示)）
 
 ```
 svg-viewer/
@@ -145,3 +145,8 @@ svg-viewer/
 1. **⟲ボタン削除時の消し忘れ**: `#btnReset`ボタンをHTMLから削除した際、`js/mode.js`の`applyModeLabels()`内に`document.getElementById('btnReset').textContent = ...`という参照が残っており、存在しない要素への操作で例外が発生 → **それ以降に書かれていた`btnWake`/`btnFocus`のラベル設定が実行されずに終わっていた**(iPhone実機で☀️/👁ボタンが空白になっていた原因)。該当行を削除して解消。
 2. **操作モード切替が実は機能していなかった**: `setHtmlInteractMode(on)`内で、iframeを探す対象を`on`(これから入るモード)を基準に判定していたが、実際にはまだ移動する前で「切り替え前の現在地」にいるため、常に`interactStage`側(まだ何もない)を探してしまい早期returnしていた。切り替え前の`htmlInteractMode`(現在地)を基準に探すよう修正。
 3. **再発防止策**: `applyModeLabels()`を`document.getElementById(id).textContent = ...`の直書きから、要素が見つからなくても例外を出さない`setText(id, val)`/`setPlaceholder(id, val)`ヘルパー経由に統一。今後HTML側の要素を削除/リネームした際に、その1行だけ無視されて他のラベル設定は止まらなくなる。
+
+## 今回の変更(レイアウト圧縮・常時点灯判定の再修正)
+- **常時点灯の判定方法を変更**: hover判定でも直らなかったため、`matchMedia('(pointer: coarse)')`(主な操作方法が指かどうか)を使う方式に変更。PCはマウス/トラックパッドが主入力になるため`pointer:fine`となり、タッチ対応PCでも誤って表示されにくくなった。
+- **下部バーのレイアウトを圧縮**: 背景切替(透過/白/黒)・常時点灯・全体表示・ファイル保存を1列(`compact-row`)にまとめた。常時点灯/全体表示/ファイル保存は絵文字アイコンのみ表示し、フルテキストはtitle属性(ホバー/長押しで見える)に保持する方式に変更 (`js/mode.js`の`setCompact()`)。
+- **1行目(クリップボード/貼り付け/ファイル)の折り返し対策**: フォントサイズを13px→12pxに縮小、`white-space:nowrap; text-overflow:ellipsis;`を追加して2行折り返しを防止。

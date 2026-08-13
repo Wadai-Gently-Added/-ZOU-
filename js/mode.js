@@ -6,6 +6,14 @@
 // そこで例外が起きて以降の行が実行されなくなる事故を防ぐための安全ヘルパー
 function setText(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
 function setPlaceholder(id, val){ const el = document.getElementById(id); if(el) el.placeholder = val; }
+// スペースの狭い一列レイアウト用: 先頭の絵文字だけを表示し、フルテキストはtitle(ホバー/長押しで見える)に retain する
+function setCompact(id, fullLabel){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const m = fullLabel.match(/^(\S+)\s+(.+)$/);
+  el.textContent = m ? m[1] : fullLabel;
+  el.title = fullLabel;
+}
 
 function applyModeLabels(){
   const L = STR.mode();
@@ -31,9 +39,9 @@ function applyModeLabels(){
   setText('bgBtnChecker', C.bgChecker);
   setText('bgBtnWhite', C.bgWhite);
   setText('bgBtnBlack', C.bgBlack);
-  setText('btnWake', C.btnWake);
-  setText('btnFocus', C.btnFocus);
-  setText('btnDownloadFile', L.downloadMenu);
+  setCompact('btnWake', C.btnWake);
+  setCompact('btnFocus', C.btnFocus);
+  setCompact('btnDownloadFile', L.downloadMenu);
 
   // 貼り付けシート
   setText('pasteSheetTitle', L.pasteSheetTitle);
