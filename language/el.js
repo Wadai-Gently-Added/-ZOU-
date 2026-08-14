@@ -106,7 +106,7 @@ const LANG_EL = {
     manualPasteName: 'Χειροκίνητη επικόλληση'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Τα SVG μου',
     listSheetTitle: 'Τα SVG μου',
     pasteSheetTitle: 'Επικόλληση κώδικα SVG',
@@ -126,7 +126,7 @@ const LANG_EL = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Το HTML μου',
     listSheetTitle: 'Το HTML μου',
     pasteSheetTitle: 'Επικόλληση κώδικα HTML',

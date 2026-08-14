@@ -106,7 +106,7 @@ const LANG_ZH = {
     manualPasteName: '手动粘贴'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 我的 SVG',
     listSheetTitle: '我的 SVG',
     pasteSheetTitle: '粘贴 SVG 代码',
@@ -126,7 +126,7 @@ const LANG_ZH = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 我的 HTML',
     listSheetTitle: '我的 HTML',
     pasteSheetTitle: '粘贴 HTML 代码',

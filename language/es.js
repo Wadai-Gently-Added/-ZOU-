@@ -106,7 +106,7 @@ const LANG_ES = {
     manualPasteName: 'Pegado manual'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Mis SVG',
     listSheetTitle: 'Mis SVG',
     pasteSheetTitle: 'Pegar código SVG',
@@ -126,7 +126,7 @@ const LANG_ES = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Mi HTML',
     listSheetTitle: 'Mi HTML',
     pasteSheetTitle: 'Pegar código HTML',

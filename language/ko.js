@@ -106,7 +106,7 @@ const LANG_KO = {
     manualPasteName: '수동 붙여넣기'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 내 SVG',
     listSheetTitle: '내 SVG',
     pasteSheetTitle: 'SVG 코드 붙여넣기',
@@ -126,7 +126,7 @@ const LANG_KO = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 내 HTML',
     listSheetTitle: '내 HTML',
     pasteSheetTitle: 'HTML 코드 붙여넣기',

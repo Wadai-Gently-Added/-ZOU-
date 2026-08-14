@@ -201,8 +201,8 @@ textarea#pasteArea{
   white-space:pre-wrap; word-wrap:break-word; overflow:hidden; pointer-events:none;
 }
 .code-line{ display:block; min-height:1.5em; }
-.code-line.changed{ background:rgba(94,201,181,.16); border-radius:3px; }
-.code-comment{ color:#7a8b99; font-style:italic; }
+.code-line.changed{ background:rgba(255,196,0,.30); border-radius:2px; }
+.code-comment{ color:#4ec9ff; font-style:italic; font-weight:600; }
 .sheet .row{ margin-bottom:8px; }
 .sheet-close{
   text-align:center; color:var(--sub); font-size:13px; padding:8px; margin-top:2px;

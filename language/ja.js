@@ -121,7 +121,7 @@ const LANG_JA = {
     manualPasteName: '手動貼り付け'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 マイSVG',
     listSheetTitle: 'マイSVG',
     pasteSheetTitle: 'SVGコードを貼り付け',
@@ -141,7 +141,7 @@ const LANG_JA = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 マイHTML',
     listSheetTitle: 'マイHTML',
     pasteSheetTitle: 'HTMLコードを貼り付け',

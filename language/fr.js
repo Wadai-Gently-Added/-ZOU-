@@ -106,7 +106,7 @@ const LANG_FR = {
     manualPasteName: 'Collage manuel'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Mes SVG',
     listSheetTitle: 'Mes SVG',
     pasteSheetTitle: 'Coller du code SVG',
@@ -126,7 +126,7 @@ const LANG_FR = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Mon HTML',
     listSheetTitle: 'Mon HTML',
     pasteSheetTitle: 'Coller du code HTML',

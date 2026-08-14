@@ -301,8 +301,11 @@ document.getElementById('fileInput').onchange = (e)=>{
 };
 
 // SVG/HTML両モードで「今表示中の内容」を一貫して取得するためのヘルパー
+// HTMLモードは操作モード中、iframe(.html-content-wrap)が#stageから#interactStageへ
+// 物理的に移動しているため、両方を見ないと「中身が無い」と誤判定してしまう(登録できないバグの原因だった)
 function hasStageContent(){
-  return currentMode === 'html' ? !!stage.querySelector('.html-content-wrap') : !!stage.querySelector('svg');
+  if(currentMode === 'html') return !!(stage.querySelector('.html-content-wrap') || interactStage.querySelector('.html-content-wrap'));
+  return !!stage.querySelector('svg');
 }
 function currentContentString(){
   if(currentMode === 'html'){

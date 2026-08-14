@@ -106,7 +106,7 @@ const LANG_RU = {
     manualPasteName: 'Вставлено вручную'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Мои SVG',
     listSheetTitle: 'Мои SVG',
     pasteSheetTitle: 'Вставить код SVG',
@@ -126,7 +126,7 @@ const LANG_RU = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 Мой HTML',
     listSheetTitle: 'Мой HTML',
     pasteSheetTitle: 'Вставить код HTML',

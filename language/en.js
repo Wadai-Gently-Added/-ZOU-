@@ -121,7 +121,7 @@ const LANG_EN = {
     manualPasteName: 'Manual paste'
   },
   svg: {
-    appTitle: 'SVG VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 My SVGs',
     listSheetTitle: 'My SVGs',
     pasteSheetTitle: 'Paste SVG code',
@@ -141,7 +141,7 @@ const LANG_EN = {
     groupItemsNoun: 'SVG'
   },
   html: {
-    appTitle: 'HTML VIEWER',
+    appTitle: '造 -ZOU-',
     listBtn: '📂 My HTML',
     listSheetTitle: 'My HTML',
     pasteSheetTitle: 'Paste HTML code',
