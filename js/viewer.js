@@ -245,7 +245,13 @@ wrap.addEventListener('wheel', (e)=>{
 }, { passive:false });
 
 /* ---- zoom/reset ---- */
-document.getElementById('btnReset').onclick = fitToView;
+// ボタン単体でのリセットは廃止済み(ズームリセットはリロード/ダブルタップに統一)。
+// HTML側の要素が消えてもスクリプト全体が例外で止まらないよう、以後の.onclick代入は
+// 全てこの安全ヘルパー経由にする(mode.jsのsetText/setCompactと同じ思想)
+function onClick(id, handler){
+  const el = document.getElementById(id);
+  if(el) el.onclick = handler;
+}
 
 /* ---- background toggle ---- */
 document.querySelectorAll('.bgtoggle button').forEach(btn=>{
