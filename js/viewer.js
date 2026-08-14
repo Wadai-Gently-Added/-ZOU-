@@ -86,6 +86,7 @@ function loadSvgContent(text, name){
     svgEl.style.height = vb.height + 'px';
   }
   fitToView();
+  saveDraft('svg', currentName, svgEl.outerHTML); // 下書き自動保存(未登録でも次回復元できるように)
 }
 
 // HTMLモード: 読み込んだHTMLをそのままメイン画面に埋め込むと、そのHTML内のポップアップや
@@ -163,6 +164,7 @@ function loadHtmlContent(text, name){
   frame.style.pointerEvents = 'none';
   updateHtmlInteractButton();
   fitToView();
+  saveDraft('html', currentName, text); // 下書き自動保存(未登録でも次回復元できるように)
 }
 
 function loadContent(text, name){

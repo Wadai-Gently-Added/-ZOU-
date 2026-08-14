@@ -155,3 +155,11 @@ svg-viewer/
 - 背景切替ボタンの余白を詰め、コンパクト行のボタン(常時点灯/全体表示/ファイル保存)は絵文字だけでなく小さめフォント(10px)+2行折り返しでフルテキスト表示に変更(`setCompact`の仕様変更)
 - 全11言語ファイルの👁(全体表示アイコン)を⛶に差し替え(怖いとの指摘のため)
 - 常時点灯の判定、pointer:coarseでも直らなかったためUA(ユーザーエージェント)文字列判定(`/iPhone|iPad|iPod|Android/i`)に変更。これで確実にスマホ/タブレットのみに絞れるはず
+
+## ツール名決定・バグ修正・機能追加(2026-08-15)
+- **ツール名を「造 -ZOU-」に決定**。全11言語の`appTitle`(SVG/HTMLどちらのモードでも)とindex.htmlの`<title>`/`<h1 id="appTitle">`を統一
+- **`#btnReset`消し忘れバグ**: `js/viewer.js`248行目に`document.getElementById('btnReset').onclick = ...`が残っていて、`#btnReset`が既にHTMLから無いためnullエラーで**それ以降のスクリプトが全部止まっていた**(常時点灯ボタンがPCで消えない不具合の真因もこれだった)。該当行を削除し、以後`.onclick`代入は`onClick(id, handler)`安全ヘルパー経由に統一
+- **簡易編集にコメント/変更行の色分けを追加**: `codeBox`(textarea)の裏に`codeHighlight`(pre)を重ねる方式。`<!-- -->`コメントは水色+太字、シートを開いてからの変更行は黄色背景でハイライト(LCSベースの行差分)
+- **HTML操作モードで「マイHTML」に登録できないバグ**: 操作モード中はiframeが`#stage`→`#interactStage`へ物理移動するため、保存判定の`hasStageContent()`が`#stage`しか見ておらず「中身が無い」と誤判定していた。両方見るよう修正
+- **タブ切替時の状態保持**: `js/mode.js`の`modeState`により、SVG/HTMLタブを切り替えても表示内容がDOMごと退避・復元される仕組みは既に実装済みと判明(追加対応不要)
+- **下書き自動保存機能を追加**: 「マイSVG/マイHTMLへ登録」していなくても、読込・編集の度に表示中の内容を`localStorage`(`svgViewerDraft`/`htmlViewerDraft`)へ自動保存。閉じて再度開いた時に両モードの下書きが復元され、さらに閉じる直前に見ていたタブ(`viewerLastMode`)から再開できる(`js/storage.js`の`saveDraft`/`getDraft`/`getLastMode`/`setLastMode`、`js/mode.js`起動時の`restoreDraftIntoState()`)

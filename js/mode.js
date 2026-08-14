@@ -103,6 +103,7 @@ function switchMode(mode){
   if(fromState.node) stage.removeChild(fromState.node);
 
   currentMode = mode;
+  setLastMode(mode); // 次回起動時にこのタブから再開できるよう覚えておく
   document.querySelectorAll('.mode-tab').forEach(t=>{
     t.classList.toggle('active', t.dataset.mode === mode);
   });
@@ -143,3 +144,60 @@ langSelect.value = currentLanguage;
 langSelect.onchange = ()=> setLanguage(langSelect.value);
 
 applyModeLabels();
+
+// ---- 起動時の下書き自動復元 ----
+// 明示的に「マイSVG/マイHTMLへ登録」していなくても、前回画面に表示していた内容を
+// そのまま次回起動時に復元する(急いで閉じた場合の保険)。svg/html両方をmodeStateへ
+// 仕込んでおき、初期表示分(svg)だけこの場で画面に反映、閉じる直前がhtmlタブだった場合は
+// switchMode()で瞬時に切り替える。
+function restoreDraftIntoState(mode){
+  const draft = getDraft(mode);
+  if(!draft || !draft.content) return;
+  const st = modeState[mode];
+  st.name = draft.name;
+  st.dirty = true;
+  if(mode === 'html'){
+    st.htmlSource = draft.content;
+    const frame = document.createElement('iframe');
+    frame.className = 'html-content-wrap';
+    frame.setAttribute('sandbox', 'allow-scripts');
+    frame.style.width = HTML_FRAME_WIDTH + 'px';
+    frame.style.height = HTML_FRAME_HEIGHT + 'px';
+    frame.style.border = 'none';
+    frame.style.display = 'block';
+    frame.style.pointerEvents = 'none';
+    frame.srcdoc = draft.content;
+    st.node = frame;
+  } else {
+    const svgSource = extractSvgElement(draft.content);
+    if(!svgSource) return;
+    const svgEl = document.importNode(svgSource, true);
+    svgEl.style.overflow = 'visible';
+    const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+    if(vb && vb.width && vb.height){
+      svgEl.style.width = vb.width + 'px';
+      svgEl.style.height = vb.height + 'px';
+    }
+    st.node = svgEl;
+  }
+}
+restoreDraftIntoState('svg');
+restoreDraftIntoState('html');
+
+// 起動直後は必ずsvgタブがcurrentModeなので、その下書きがあればここで画面に反映する
+if(modeState.svg.node){
+  stage.innerHTML = '';
+  stage.appendChild(modeState.svg.node);
+  stage.style.display = 'block';
+  empty.style.display = 'none';
+  currentName = modeState.svg.name;
+  isDirty = modeState.svg.dirty;
+  fitToView();
+}
+
+// 閉じる直前がHTMLタブだった場合はそちらに切り替えて開く(switchMode内でrenderListも呼ばれる)
+if(getLastMode() === 'html' && modeState.html.node){
+  switchMode('html');
+} else {
+  renderList();
+}

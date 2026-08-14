@@ -73,6 +73,32 @@ function pruneEmptyGroups(){
   if(kept.length !== groups.length) setGroups(kept);
 }
 
+// ---- 下書き自動保存 ----
+// 「マイSVG/マイHTMLへ登録」を明示的にしていなくても、画面に表示中の内容を常に別途保持しておく。
+// 営業先などで急いで閉じてしまっても、次回開いた時に続きから編集できるようにするための仕組み。
+// マイSVG/マイHTML一覧(storeKey)とは別のキーに保存し、一覧を汚さない。
+function draftKey(mode){ return mode === 'html' ? 'htmlViewerDraft' : 'svgViewerDraft'; }
+function saveDraft(mode, name, content){
+  try{
+    if(content){
+      localStorage.setItem(draftKey(mode), JSON.stringify({ name: name || null, content, savedAt: new Date().toISOString() }));
+    } else {
+      localStorage.removeItem(draftKey(mode));
+    }
+  }catch(e){}
+}
+function getDraft(mode){
+  try{ return JSON.parse(localStorage.getItem(draftKey(mode)) || 'null'); }
+  catch(e){ return null; }
+}
+// 閉じる直前にどちらのタブ(svg/html)を見ていたかを覚えておき、次回そのタブから開けるようにする
+function getLastMode(){
+  try{ return localStorage.getItem('viewerLastMode') || 'svg'; }catch(e){ return 'svg'; }
+}
+function setLastMode(mode){
+  try{ localStorage.setItem('viewerLastMode', mode); }catch(e){}
+}
+
 // 複数のシート(貼り付け/マイSVG/コード編集/印刷)が同時に「open」状態のまま残ると、
 // 後からDOMに現れる方が透明に重なってクリックを吸い取ってしまうことがあるため、
 // 新しいシートを開く前に必ず全部閉じておく(選んで印刷が無反応になる不具合の対策)
