@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>SVG Viewer</title>
+<title>造 -ZOU-</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -110,7 +110,10 @@
 <div class="sheet-backdrop" id="codeBackdrop"></div>
 <div class="sheet" id="codeSheet" style="max-height:85vh">
   <h2 id="codeSheetTitle">SVGコードを編集</h2>
-  <textarea id="codeBox" style="height:220px" placeholder=""></textarea>
+  <div class="code-editor-wrap">
+    <pre id="codeHighlight" aria-hidden="true"></pre>
+    <textarea id="codeBox" placeholder="" spellcheck="false"></textarea>
+  </div>
   <div class="row">
     <button class="btn accent" id="btnCodeApply"></button>
   </div>

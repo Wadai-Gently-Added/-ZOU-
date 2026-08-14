@@ -470,12 +470,76 @@ document.getElementById('exitFocusBtn').onclick = ()=>{
 };
 
 /* ---- code edit sheet ---- */
+// コメント色分け/変更行ハイライト: codeBoxは文字を透明にしてキャレットのみ表示し、
+// 裏に重ねたcodeHighlight(pre)が色付き表示を担当する。escHtmlはprint.jsで定義済みのものを流用
+// (イベント発火はページ全読込後なので参照順の問題は起きない)。
 const codeSheet = document.getElementById('codeSheet');
 const codeBackdrop = document.getElementById('codeBackdrop');
 const codeBox = document.getElementById('codeBox');
+const codeHighlight = document.getElementById('codeHighlight');
+let codeBaseline = ''; // 編集シートを開いた時点の内容。ここからの変更行をハイライトする基準
+
+// 2つの行配列を比較し、oldLinesに存在しない(=追加/変更された)newLines側の行indexをSetで返す
+function diffChangedLines(oldLines, newLines){
+  const changed = new Set();
+  if(oldLines.length * newLines.length > 200000) return changed; // 巨大データでの重い計算を回避
+  const n = oldLines.length, m = newLines.length;
+  const dp = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--){
+    for(let j=m-1;j>=0;j--){
+      dp[i][j] = oldLines[i] === newLines[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  let i=0, j=0;
+  while(i<n && j<m){
+    if(oldLines[i] === newLines[j]){ i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ i++; }
+    else { changed.add(j); j++; }
+  }
+  while(j<m){ changed.add(j); j++; }
+  return changed;
+}
+function findCommentRanges(text){
+  const ranges = [];
+  const re = /<!--[\s\S]*?-->/g;
+  let m;
+  while((m = re.exec(text))) ranges.push([m.index, m.index + m[0].length]);
+  return ranges;
+}
+function renderCodeHighlight(){
+  const text = codeBox.value;
+  const lines = text.split('\n');
+  const changedLines = diffChangedLines(codeBaseline.split('\n'), lines);
+  const commentRanges = findCommentRanges(text);
+  let offset = 0;
+  const html = lines.map((line, idx)=>{
+    const lineStart = offset, lineEnd = offset + line.length;
+    offset = lineEnd + 1;
+    let segHtml = '', pos = lineStart;
+    for(const [cs, ce] of commentRanges){
+      if(ce <= lineStart || cs >= lineEnd) continue;
+      const segStart = Math.max(cs, lineStart), segEnd = Math.min(ce, lineEnd);
+      if(segStart > pos) segHtml += escHtml(text.slice(pos, segStart));
+      segHtml += `<span class="code-comment">${escHtml(text.slice(segStart, segEnd))}</span>`;
+      pos = segEnd;
+    }
+    if(pos < lineEnd) segHtml += escHtml(text.slice(pos, lineEnd));
+    const cls = changedLines.has(idx) ? 'code-line changed' : 'code-line';
+    return `<span class="${cls}">${segHtml || ' '}</span>`;
+  }).join('');
+  codeHighlight.innerHTML = html;
+}
+codeBox.addEventListener('input', renderCodeHighlight);
+codeBox.addEventListener('scroll', ()=>{
+  codeHighlight.scrollTop = codeBox.scrollTop;
+  codeHighlight.scrollLeft = codeBox.scrollLeft;
+});
 function openCode(){
   closeAllSheets();
-  codeBox.value = currentContentString() || '';
+  const initial = currentContentString() || '';
+  codeBox.value = initial;
+  codeBaseline = initial;
+  renderCodeHighlight();
   codeSheet.classList.add('open'); codeBackdrop.classList.add('open');
 }
 function closeCode(){ codeSheet.classList.remove('open'); codeBackdrop.classList.remove('open'); }
