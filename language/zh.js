@@ -39,7 +39,7 @@ const LANG_ZH = {
     bgBlack: '黑色',
     btnReset: '⟲',
     btnWake: '☀️ 屏幕常亮',
-    btnFocus: '👁 全屏显示',
+    btnFocus: '⛶ 全屏显示',
     exitFocusBtn: '⤢',
 
     emptySub: '请使用下方按钮进行粘贴、选择文件或从剪贴板加载',

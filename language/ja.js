@@ -45,7 +45,7 @@ const LANG_JA = {
     bgBlack: '黒',
     btnReset: '⟲',
     btnWake: '☀️ 常時点灯',
-    btnFocus: '👁 全体表示',
+    btnFocus: '⛶ 全体表示',
     exitFocusBtn: '⤢',
 
     // --- 空状態(共通の補足文) ---

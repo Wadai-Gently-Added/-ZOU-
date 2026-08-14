@@ -39,7 +39,7 @@ const LANG_IT = {
     bgBlack: 'Nero',
     btnReset: '⟲',
     btnWake: '☀️ Schermo attivo',
-    btnFocus: '👁 Schermo intero',
+    btnFocus: '⛶ Schermo intero',
     exitFocusBtn: '⤢',
 
     emptySub: 'Usa i pulsanti qui sotto per incollare, scegliere un file o caricare dagli appunti',

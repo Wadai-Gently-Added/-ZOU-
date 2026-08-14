@@ -418,11 +418,11 @@ function downloadCurrentFile(){
 }
 
 /* ---- wake lock (常時点灯) ---- */
-// 「主な操作方法が指(coarse pointer)かどうか」で判定する。PCはマウス/トラックパッドが
-// 主入力になるのでpointer:fineになり、タッチ対応PCでも誤って表示されにくい
+// pointer:coarse判定でもPCで表示されるケースがあったため、確実にスマホ/タブレットだけに
+// 絞れるUA(ユーザーエージェント)文字列判定に切り替える
 const wakeBtn = document.getElementById('btnWake');
-const wakeSupported = ('wakeLock' in navigator)
-  && window.matchMedia('(pointer: coarse)').matches;
+const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const wakeSupported = ('wakeLock' in navigator) && isMobileDevice;
 if(!wakeSupported){
   wakeBtn.style.display = 'none';
 }

@@ -39,7 +39,7 @@ const LANG_FR = {
     bgBlack: 'Noir',
     btnReset: '⟲',
     btnWake: '☀️ Écran allumé',
-    btnFocus: '👁 Plein écran',
+    btnFocus: '⛶ Plein écran',
     exitFocusBtn: '⤢',
 
     emptySub: 'Utilisez les boutons ci-dessous pour coller, choisir un fichier ou charger depuis le presse-papiers',

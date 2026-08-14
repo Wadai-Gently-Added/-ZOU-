@@ -39,7 +39,7 @@ const LANG_PT = {
     bgBlack: 'Preto',
     btnReset: '⟲',
     btnWake: '☀️ Tela ativa',
-    btnFocus: '👁 Tela cheia',
+    btnFocus: '⛶ Tela cheia',
     exitFocusBtn: '⤢',
 
     emptySub: 'Use os botões abaixo para colar, escolher um arquivo ou carregar da área de transferência',

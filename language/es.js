@@ -39,7 +39,7 @@ const LANG_ES = {
     bgBlack: 'Negro',
     btnReset: '⟲',
     btnWake: '☀️ Pantalla activa',
-    btnFocus: '👁 Pantalla completa',
+    btnFocus: '⛶ Pantalla completa',
     exitFocusBtn: '⤢',
 
     emptySub: 'Usa los botones de abajo para pegar, elegir un archivo o cargar desde el portapapeles',

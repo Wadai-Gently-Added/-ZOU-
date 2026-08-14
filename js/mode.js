@@ -6,12 +6,11 @@
 // そこで例外が起きて以降の行が実行されなくなる事故を防ぐための安全ヘルパー
 function setText(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
 function setPlaceholder(id, val){ const el = document.getElementById(id); if(el) el.placeholder = val; }
-// スペースの狭い一列レイアウト用: 先頭の絵文字だけを表示し、フルテキストはtitle(ホバー/長押しで見える)に retain する
+// スペースの狭い一列レイアウト用: 小さめフォント+2行折り返しでフルテキストをそのまま表示する
 function setCompact(id, fullLabel){
   const el = document.getElementById(id);
   if(!el) return;
-  const m = fullLabel.match(/^(\S+)\s+(.+)$/);
-  el.textContent = m ? m[1] : fullLabel;
+  el.textContent = fullLabel;
   el.title = fullLabel;
 }
 

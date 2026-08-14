@@ -45,7 +45,7 @@ const LANG_EN = {
     bgBlack: 'Black',
     btnReset: '⟲',
     btnWake: '☀️ Keep Awake',
-    btnFocus: '👁 Full Screen',
+    btnFocus: '⛶ Full Screen',
     exitFocusBtn: '⤢',
 
     // --- empty state (shared hint text) ---

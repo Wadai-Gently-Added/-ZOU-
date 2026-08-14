@@ -39,7 +39,7 @@ const LANG_DE = {
     bgBlack: 'Schwarz',
     btnReset: '⟲',
     btnWake: '☀️ Bildschirm wach halten',
-    btnFocus: '👁 Vollbild',
+    btnFocus: '⛶ Vollbild',
     exitFocusBtn: '⤢',
 
     emptySub: 'Verwenden Sie die Schaltflächen unten zum Einfügen, Auswählen einer Datei oder Laden aus der Zwischenablage',

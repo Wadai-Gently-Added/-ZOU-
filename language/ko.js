@@ -39,7 +39,7 @@ const LANG_KO = {
     bgBlack: '검정',
     btnReset: '⟲',
     btnWake: '☀️ 화면 켜짐 유지',
-    btnFocus: '👁 전체 화면',
+    btnFocus: '⛶ 전체 화면',
     exitFocusBtn: '⤢',
 
     emptySub: '아래 버튼으로 붙여넣기, 파일 선택, 클립보드에서 불러오기를 이용하세요',
