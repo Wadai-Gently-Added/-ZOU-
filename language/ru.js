@@ -34,7 +34,13 @@ const LANG_RU = {
     backupRestoreMenu: "Отменить последний импорт",
     backupRestoreSnapshotConfirm: "Это восстановит состояние непосредственно перед последним импортом, текущие данные будут перезаписаны. Продолжить?",
     backupNoSnapshot: "Пока нечего восстанавливать (резервная копия ещё не импортировалась)",
-    tabSvg: 'Просмотр SVG',
+
+    searchToggle: "🔍 Найти/Заменить",
+    searchPlaceholder: "Найти текст",
+    replacePlaceholder: "Заменить на",
+    replaceOneBtn: "Заменить",
+    replaceAllBtn: "Заменить все",
+    searchNoMatch: "Совпадений нет",    tabSvg: 'Просмотр SVG',
     tabHtml: 'Просмотр HTML',
 
     codeBtn: '🖊 Код',

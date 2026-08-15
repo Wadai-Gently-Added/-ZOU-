@@ -34,7 +34,13 @@ const LANG_DE = {
     backupRestoreMenu: "Letzten Import rückgängig machen",
     backupRestoreSnapshotConfirm: "Dadurch wird der Zustand vor dem letzten Import wiederhergestellt und die aktuellen Daten überschrieben. Fortfahren?",
     backupNoSnapshot: "Es gibt noch nichts wiederherzustellen (es wurde kein Backup importiert)",
-    tabSvg: 'SVG-Betrachter',
+
+    searchToggle: "🔍 Suchen/Ersetzen",
+    searchPlaceholder: "Text suchen",
+    replacePlaceholder: "Ersetzen durch",
+    replaceOneBtn: "Ersetzen",
+    replaceAllBtn: "Alle ersetzen",
+    searchNoMatch: "Keine Treffer",    tabSvg: 'SVG-Betrachter',
     tabHtml: 'HTML-Betrachter',
 
     codeBtn: '🖊 Code',

@@ -37,7 +37,13 @@ const LANG_EN = {
     backupRestoreMenu: "Undo last import",
     backupRestoreSnapshotConfirm: "This restores the state just before your last import, overwriting current data. Continue?",
     backupNoSnapshot: "Nothing to restore yet (no backup has been imported)",    // --- tabs / language ---
-    tabSvg: 'SVG Viewer',
+
+    searchToggle: "🔍 Find/Replace",
+    searchPlaceholder: "Find text",
+    replacePlaceholder: "Replace with",
+    replaceOneBtn: "Replace",
+    replaceAllBtn: "Replace All",
+    searchNoMatch: "No matches",    tabSvg: 'SVG Viewer',
     tabHtml: 'HTML Viewer',
 
     // --- top bar ---

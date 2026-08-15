@@ -511,39 +511,148 @@ function findCommentRanges(text){
   while((m = re.exec(text))) ranges.push([m.index, m.index + m[0].length]);
   return ranges;
 }
+// 1行分の範囲[lineStart,lineEnd)に、複数の色分けクラス(comment/search-match/search-current等)を
+// 重なりも考慮して割り当ててHTMLを組み立てる(区間スイープ方式。境界点で分割→各区間の該当クラスをまとめる)
+function buildStyledLineHtml(text, lineStart, lineEnd, rangeSets){
+  const points = new Set([lineStart, lineEnd]);
+  const clipped = {};
+  for(const cls in rangeSets){
+    clipped[cls] = [];
+    for(const [rs, re] of rangeSets[cls]){
+      if(re <= lineStart || rs >= lineEnd) continue;
+      const s = Math.max(rs, lineStart), e = Math.min(re, lineEnd);
+      clipped[cls].push([s, e]);
+      points.add(s); points.add(e);
+    }
+  }
+  const sorted = Array.from(points).sort((a,b)=>a-b);
+  let html = '';
+  for(let i=0;i<sorted.length-1;i++){
+    const s = sorted[i], e = sorted[i+1];
+    if(s>=e) continue;
+    const classes = [];
+    for(const cls in clipped){
+      if(clipped[cls].some(([rs,re])=> rs<=s && re>=e)) classes.push(cls);
+    }
+    const seg = escHtml(text.slice(s,e));
+    html += classes.length ? `<span class="${classes.join(' ')}">${seg}</span>` : seg;
+  }
+  return html;
+}
+
+// ---- 検索/置換 ----
+let searchMatches = []; // [[start,end], ...] codeBox.value内での一致位置
+let searchCurrentIndex = -1;
+function computeSearchMatches(){
+  const term = codeSearchInput.value;
+  searchMatches = [];
+  searchCurrentIndex = -1;
+  if(!term){ updateSearchStatus(); return; }
+  const text = codeBox.value;
+  const caseSensitive = codeSearchCase.checked;
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? term : term.toLowerCase();
+  let idx = 0;
+  while(true){
+    const found = hay.indexOf(needle, idx);
+    if(found === -1) break;
+    searchMatches.push([found, found + needle.length]);
+    idx = found + needle.length;
+  }
+  if(searchMatches.length) searchCurrentIndex = 0;
+  updateSearchStatus();
+}
+function updateSearchStatus(){
+  codeSearchStatus.textContent = searchMatches.length
+    ? `${searchCurrentIndex+1}/${searchMatches.length}`
+    : (codeSearchInput.value ? STR.common.searchNoMatch : '');
+}
+function gotoMatch(delta){
+  if(!searchMatches.length) return;
+  searchCurrentIndex = (searchCurrentIndex + delta + searchMatches.length) % searchMatches.length;
+  const [s, e] = searchMatches[searchCurrentIndex];
+  codeBox.focus();
+  codeBox.setSelectionRange(s, e);
+  updateSearchStatus();
+  renderCodeHighlight();
+}
+function replaceCurrentMatch(){
+  if(!searchMatches.length || searchCurrentIndex < 0) return;
+  const [s, e] = searchMatches[searchCurrentIndex];
+  codeBox.value = codeBox.value.slice(0, s) + codeReplaceInput.value + codeBox.value.slice(e);
+  computeSearchMatches();
+  renderCodeHighlight();
+}
+function replaceAllMatches(){
+  const term = codeSearchInput.value;
+  if(!term) return;
+  const text = codeBox.value;
+  const caseSensitive = codeSearchCase.checked;
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? term : term.toLowerCase();
+  let out = '', pos = 0;
+  while(true){
+    const found = hay.indexOf(needle, pos);
+    if(found === -1){ out += text.slice(pos); break; }
+    out += text.slice(pos, found) + codeReplaceInput.value;
+    pos = found + needle.length;
+  }
+  codeBox.value = out;
+  computeSearchMatches();
+  renderCodeHighlight();
+}
+
 function renderCodeHighlight(){
   const text = codeBox.value;
   const lines = text.split('\n');
   const changedLines = diffChangedLines(codeBaseline.split('\n'), lines);
   const commentRanges = findCommentRanges(text);
+  const currentRanges = (searchCurrentIndex >= 0 && searchMatches[searchCurrentIndex]) ? [searchMatches[searchCurrentIndex]] : [];
+  const otherRanges = searchMatches.filter((_, i)=> i !== searchCurrentIndex);
   let offset = 0;
   const html = lines.map((line, idx)=>{
     const lineStart = offset, lineEnd = offset + line.length;
     offset = lineEnd + 1;
-    let segHtml = '', pos = lineStart;
-    for(const [cs, ce] of commentRanges){
-      if(ce <= lineStart || cs >= lineEnd) continue;
-      const segStart = Math.max(cs, lineStart), segEnd = Math.min(ce, lineEnd);
-      if(segStart > pos) segHtml += escHtml(text.slice(pos, segStart));
-      segHtml += `<span class="code-comment">${escHtml(text.slice(segStart, segEnd))}</span>`;
-      pos = segEnd;
-    }
-    if(pos < lineEnd) segHtml += escHtml(text.slice(pos, lineEnd));
+    const segHtml = buildStyledLineHtml(text, lineStart, lineEnd, {
+      'code-comment': commentRanges,
+      'search-match': otherRanges,
+      'search-current': currentRanges
+    });
     const cls = changedLines.has(idx) ? 'code-line changed' : 'code-line';
     return `<span class="${cls}">${segHtml || ' '}</span>`;
   }).join('');
   codeHighlight.innerHTML = html;
 }
-codeBox.addEventListener('input', renderCodeHighlight);
+codeBox.addEventListener('input', ()=>{ computeSearchMatches(); renderCodeHighlight(); });
 codeBox.addEventListener('scroll', ()=>{
   codeHighlight.scrollTop = codeBox.scrollTop;
   codeHighlight.scrollLeft = codeBox.scrollLeft;
 });
+const codeSearchPanel = document.getElementById('codeSearchPanel');
+const codeSearchInput = document.getElementById('codeSearchInput');
+const codeSearchCase = document.getElementById('codeSearchCase');
+const codeSearchStatus = document.getElementById('codeSearchStatus');
+const codeReplaceInput = document.getElementById('codeReplaceInput');
+document.getElementById('btnCodeSearchToggle').onclick = ()=>{
+  const show = codeSearchPanel.style.display === 'none';
+  codeSearchPanel.style.display = show ? 'block' : 'none';
+  if(show) codeSearchInput.focus();
+};
+codeSearchInput.addEventListener('input', ()=>{ computeSearchMatches(); renderCodeHighlight(); });
+codeSearchCase.addEventListener('change', ()=>{ computeSearchMatches(); renderCodeHighlight(); });
+document.getElementById('codeSearchNext').onclick = ()=> gotoMatch(1);
+document.getElementById('codeSearchPrev').onclick = ()=> gotoMatch(-1);
+document.getElementById('codeReplaceOne').onclick = replaceCurrentMatch;
+document.getElementById('codeReplaceAll').onclick = replaceAllMatches;
 function openCode(){
   closeAllSheets();
   const initial = currentContentString() || '';
   codeBox.value = initial;
   codeBaseline = initial;
+  codeSearchInput.value = '';
+  codeReplaceInput.value = '';
+  codeSearchPanel.style.display = 'none';
+  computeSearchMatches();
   renderCodeHighlight();
   codeSheet.classList.add('open'); codeBackdrop.classList.add('open');
 }

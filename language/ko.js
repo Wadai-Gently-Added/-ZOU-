@@ -34,7 +34,13 @@ const LANG_KO = {
     backupRestoreMenu: "마지막 가져오기 되돌리기",
     backupRestoreSnapshotConfirm: "마지막 가져오기 직전 상태로 되돌립니다. 현재 데이터가 덮어써집니다. 계속할까요?",
     backupNoSnapshot: "아직 되돌릴 데이터가 없습니다(가져온 백업이 없음)",
-    tabSvg: 'SVG 뷰어',
+
+    searchToggle: "🔍 찾기/바꾸기",
+    searchPlaceholder: "찾을 텍스트",
+    replacePlaceholder: "바꿀 텍스트",
+    replaceOneBtn: "바꾸기",
+    replaceAllBtn: "모두 바꾸기",
+    searchNoMatch: "일치 항목 없음",    tabSvg: 'SVG 뷰어',
     tabHtml: 'HTML 뷰어',
 
     codeBtn: '🖊 코드',

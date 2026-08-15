@@ -37,7 +37,13 @@ const LANG_JA = {
     backupRestoreMenu: "直前のインポート前の状態に戻す",
     backupRestoreSnapshotConfirm: "インポート直前の状態に戻すよ。今のデータは上書きされるけど大丈夫？",
     backupNoSnapshot: "戻せるデータがまだ無いよ（一度もバックアップを読み込んでいない）",    // --- タブ / 言語 ---
-    tabSvg: 'SVGビューワー',
+
+    searchToggle: "🔍 検索/置換",
+    searchPlaceholder: "検索する文字",
+    replacePlaceholder: "置き換える文字",
+    replaceOneBtn: "1件置換",
+    replaceAllBtn: "全部置換",
+    searchNoMatch: "見つからないよ",    tabSvg: 'SVGビューワー',
     tabHtml: 'HTMLビューワー',
 
     // --- 上部バー ---

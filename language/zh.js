@@ -34,7 +34,13 @@ const LANG_ZH = {
     backupRestoreMenu: "撤销上次导入",
     backupRestoreSnapshotConfirm: "这将恢复到上次导入之前的状态，当前数据会被覆盖，是否继续？",
     backupNoSnapshot: "目前没有可恢复的数据（尚未导入过备份）",
-    tabSvg: 'SVG 查看器',
+
+    searchToggle: "🔍 查找/替换",
+    searchPlaceholder: "查找文字",
+    replacePlaceholder: "替换为",
+    replaceOneBtn: "替换",
+    replaceAllBtn: "全部替换",
+    searchNoMatch: "未找到匹配项",    tabSvg: 'SVG 查看器',
     tabHtml: 'HTML 查看器',
 
     codeBtn: '🖊 代码',

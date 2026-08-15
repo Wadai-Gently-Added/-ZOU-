@@ -34,7 +34,13 @@ const LANG_IT = {
     backupRestoreMenu: "Annulla ultima importazione",
     backupRestoreSnapshotConfirm: "Questo ripristina lo stato precedente all'ultima importazione, sovrascrivendo i dati attuali. Continuare?",
     backupNoSnapshot: "Non c'è ancora nulla da ripristinare (nessun backup importato)",
-    tabSvg: 'Visualizzatore SVG',
+
+    searchToggle: "🔍 Cerca/Sostituisci",
+    searchPlaceholder: "Cerca testo",
+    replacePlaceholder: "Sostituisci con",
+    replaceOneBtn: "Sostituisci",
+    replaceAllBtn: "Sostituisci tutto",
+    searchNoMatch: "Nessun risultato",    tabSvg: 'Visualizzatore SVG',
     tabHtml: 'Visualizzatore HTML',
 
     codeBtn: '🖊 Codice',

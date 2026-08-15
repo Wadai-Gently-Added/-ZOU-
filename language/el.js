@@ -34,7 +34,13 @@ const LANG_EL = {
     backupRestoreMenu: "Αναίρεση τελευταίας εισαγωγής",
     backupRestoreSnapshotConfirm: "Αυτό θα επαναφέρει την κατάσταση ακριβώς πριν την τελευταία εισαγωγή, αντικαθιστώντας τα τρέχοντα δεδομένα. Συνέχεια;",
     backupNoSnapshot: "Δεν υπάρχει ακόμη τίποτα για επαναφορά (δεν έχει εισαχθεί αντίγραφο ασφαλείας)",
-    tabSvg: 'Πρόγραμμα προβολής SVG',
+
+    searchToggle: "🔍 Εύρεση/Αντικατάσταση",
+    searchPlaceholder: "Αναζήτηση κειμένου",
+    replacePlaceholder: "Αντικατάσταση με",
+    replaceOneBtn: "Αντικατάσταση",
+    replaceAllBtn: "Αντικατάσταση όλων",
+    searchNoMatch: "Δεν βρέθηκαν αποτελέσματα",    tabSvg: 'Πρόγραμμα προβολής SVG',
     tabHtml: 'Πρόγραμμα προβολής HTML',
 
     codeBtn: '🖊 Κώδικας',

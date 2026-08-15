@@ -62,6 +62,11 @@ function applyModeLabels(){
   setPlaceholder('codeBox', L.codeBoxPlaceholder);
   setText('btnCodeApply', C.btnCodeApply);
   setText('codeCancel', C.sheetClose);
+  setText('btnCodeSearchToggle', C.searchToggle);
+  setPlaceholder('codeSearchInput', C.searchPlaceholder);
+  setPlaceholder('codeReplaceInput', C.replacePlaceholder);
+  setText('codeReplaceOne', C.replaceOneBtn);
+  setText('codeReplaceAll', C.replaceAllBtn);
 
   // 印刷シート
   setText('printSheetTitle', C.printSheetTitleDefault);

@@ -92,7 +92,7 @@
   <h2 style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
     <span id="listSheetTitle">マイSVG</span>
     <span style="display:flex; gap:6px;">
-      <button id="btnBackup" class="topbtn" style="padding:4px 10px;">💾</button>
+      <button id="btnBackup" class="topbtn" style="padding:4px 10px;">🗄️</button>
       <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;"></button>
       <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;"></button>
     </span>
@@ -112,6 +112,21 @@
 <div class="sheet-backdrop" id="codeBackdrop"></div>
 <div class="sheet" id="codeSheet" style="max-height:85vh">
   <h2 id="codeSheetTitle">SVGコードを編集</h2>
+  <button id="btnCodeSearchToggle" class="topbtn" style="padding:4px 10px; float:right; margin-top:-34px;">🔍</button>
+  <div id="codeSearchPanel" style="display:none;">
+    <div class="code-search-row">
+      <input type="text" id="codeSearchInput" placeholder="">
+      <label class="code-search-case"><input type="checkbox" id="codeSearchCase"><span>Aa</span></label>
+      <span id="codeSearchStatus" class="code-search-status"></span>
+      <button id="codeSearchPrev" class="topbtn" style="padding:4px 8px;">◀</button>
+      <button id="codeSearchNext" class="topbtn" style="padding:4px 8px;">▶</button>
+    </div>
+    <div class="code-search-row">
+      <input type="text" id="codeReplaceInput" placeholder="">
+      <button id="codeReplaceOne" class="topbtn" style="padding:4px 8px;"></button>
+      <button id="codeReplaceAll" class="topbtn" style="padding:4px 8px;"></button>
+    </div>
+  </div>
   <div class="code-editor-wrap">
     <pre id="codeHighlight" aria-hidden="true"></pre>
     <textarea id="codeBox" placeholder="" spellcheck="false"></textarea>
