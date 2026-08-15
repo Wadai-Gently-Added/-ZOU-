@@ -92,10 +92,12 @@
   <h2 style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
     <span id="listSheetTitle">マイSVG</span>
     <span style="display:flex; gap:6px;">
+      <button id="btnBackup" class="topbtn" style="padding:4px 10px;">💾</button>
       <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;"></button>
       <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;"></button>
     </span>
   </h2>
+  <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
   <div id="savedEmpty" style="display:none"></div>
   <div id="printSelectBar" style="display:none;">

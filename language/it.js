@@ -25,6 +25,15 @@ const LANG_IT = {
     itemDeleteConfirm: (name)=> `Eliminare "${name}"? Questa azione non può essere annullata`,
     groupDeleteConfirm: (name, noun)=> `Eliminare "${name}"? Gli elementi ${noun} non verranno eliminati, solo separati dal gruppo`,
 
+    backupExportMenu: "Esporta backup",
+    backupImportMenu: "Importa backup",
+    backupParseError: "Impossibile leggere questo file di backup (potrebbe essere danneggiato o in un formato non supportato)",
+    backupImportConfirm: "Questo sovrascriverà i tuoi dati attuali di I miei SVG / Il mio HTML. Continuare?",
+    backupImportSuccess: "Backup importato!",
+
+    backupRestoreMenu: "Annulla ultima importazione",
+    backupRestoreSnapshotConfirm: "Questo ripristina lo stato precedente all'ultima importazione, sovrascrivendo i dati attuali. Continuare?",
+    backupNoSnapshot: "Non c'è ancora nulla da ripristinare (nessun backup importato)",
     tabSvg: 'Visualizzatore SVG',
     tabHtml: 'Visualizzatore HTML',
 

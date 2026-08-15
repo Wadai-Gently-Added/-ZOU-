@@ -25,6 +25,15 @@ const LANG_PT = {
     itemDeleteConfirm: (name)=> `Excluir "${name}"? Isso não pode ser desfeito`,
     groupDeleteConfirm: (name, noun)=> `Excluir "${name}"? Os itens de ${noun} não serão excluídos, apenas desagrupados`,
 
+    backupExportMenu: "Exportar backup",
+    backupImportMenu: "Importar backup",
+    backupParseError: "Não foi possível ler este arquivo de backup (pode estar corrompido ou em formato não suportado)",
+    backupImportConfirm: "Isso substituirá seus dados atuais de Meus SVGs / Meu HTML. Continuar?",
+    backupImportSuccess: "Backup importado!",
+
+    backupRestoreMenu: "Desfazer última importação",
+    backupRestoreSnapshotConfirm: "Isso restaura o estado logo antes da última importação, sobrescrevendo os dados atuais. Continuar?",
+    backupNoSnapshot: "Ainda não há nada para restaurar (nenhum backup importado)",
     tabSvg: 'Visualizador SVG',
     tabHtml: 'Visualizador HTML',
 

@@ -25,6 +25,15 @@ const LANG_FR = {
     itemDeleteConfirm: (name)=> `Supprimer « ${name} » ? Action irréversible`,
     groupDeleteConfirm: (name, noun)=> `Supprimer « ${name} » ? Les éléments ${noun} ne seront pas supprimés, juste dissociés`,
 
+    backupExportMenu: "Exporter la sauvegarde",
+    backupImportMenu: "Importer une sauvegarde",
+    backupParseError: "Impossible de lire ce fichier de sauvegarde (il est peut-être corrompu ou dans un format non pris en charge)",
+    backupImportConfirm: "Cela remplacera vos données actuelles Mes SVG / Mon HTML. Continuer ?",
+    backupImportSuccess: "Sauvegarde importée !",
+
+    backupRestoreMenu: "Annuler la dernière importation",
+    backupRestoreSnapshotConfirm: "Cela restaure l'état juste avant votre dernière importation, écrasant les données actuelles. Continuer ?",
+    backupNoSnapshot: "Rien à restaurer pour l'instant (aucune sauvegarde importée)",
     tabSvg: 'Visionneuse SVG',
     tabHtml: 'Visionneuse HTML',
 

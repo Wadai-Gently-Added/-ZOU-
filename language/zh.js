@@ -25,6 +25,15 @@ const LANG_ZH = {
     itemDeleteConfirm: (name)=> `确定删除"${name}"吗？此操作无法撤销`,
     groupDeleteConfirm: (name, noun)=> `确定删除"${name}"吗？其中的${noun}不会被删除，只会取消分组`,
 
+    backupExportMenu: "导出备份",
+    backupImportMenu: "导入备份",
+    backupParseError: "无法读取此备份文件（可能已损坏或格式不受支持）",
+    backupImportConfirm: "导入将覆盖当前的“我的SVG／我的HTML”数据，是否继续？",
+    backupImportSuccess: "备份已导入！",
+
+    backupRestoreMenu: "撤销上次导入",
+    backupRestoreSnapshotConfirm: "这将恢复到上次导入之前的状态，当前数据会被覆盖，是否继续？",
+    backupNoSnapshot: "目前没有可恢复的数据（尚未导入过备份）",
     tabSvg: 'SVG 查看器',
     tabHtml: 'HTML 查看器',
 

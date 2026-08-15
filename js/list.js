@@ -344,8 +344,13 @@ function buildItemRow(item, i, groups, isTopLevel){
       if(box.checked) printSelectedIds.add(item.id); else printSelectedIds.delete(item.id);
       updatePrintSelectBar();
     });
+  } else {
+    // ドラッグ用ハンドルのクリックは行全体の読込に伝播させない(ドラッグ操作と誤反応しないように)
+    row.querySelector('.handle').addEventListener('click', ev=> ev.stopPropagation());
   }
-  row.querySelector('.thumb').addEventListener('click', ()=>{
+  // Edgeのタブのように行全体のどこをクリックしても読み込まれるようにする
+  // (以前はサムネイル画像を直接クリックしないと反映されず、動線として分かりにくかった)
+  row.addEventListener('click', ()=>{
     if(Date.now() < suppressClickUntil) return;
     if(inSelectMode){
       const box = row.querySelector('.print-select-box');
@@ -589,3 +594,69 @@ function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList
 document.getElementById('listBtn').onclick = openList;
 document.getElementById('listCancel').onclick = closeList;
 listBackdrop.onclick = closeList;
+
+/* ---- バックアップ書き出し／読み込み ----
+   マイSVG・マイHTML両方の登録データ・グループ・並び順を丸ごと1つのJSONにまとめて書き出す。
+   読み込み時は上書きしてしまう前に必ず今のデータを退避スナップショットへ保存しておき、
+   「復元したら別のデータが消えた」という二次事故を防ぐ(直前のインポート前に戻すメニューで復旧可能) */
+const BACKUP_KEYS = ['svgViewerSavedItems','svgViewerGroups','svgViewerTopOrder',
+                      'htmlViewerSavedItems','htmlViewerGroups','htmlViewerTopOrder'];
+function exportBackup(){
+  const data = { appName: '造 -ZOU-', exportedAt: new Date().toISOString() };
+  BACKUP_KEYS.forEach(k=>{ data[k] = localStorage.getItem(k); });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `zou-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function snapshotBeforeImport(){
+  const snap = { savedAt: new Date().toISOString() };
+  BACKUP_KEYS.forEach(k=>{ snap[k] = localStorage.getItem(k); });
+  try{ localStorage.setItem('zouPreImportSnapshot', JSON.stringify(snap)); }catch(e){}
+}
+function importBackup(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }catch(e){ alert(STR.common.backupParseError); return; }
+    const hasAny = data && BACKUP_KEYS.some(k => k in data);
+    if(!hasAny){ alert(STR.common.backupParseError); return; }
+    if(!confirm(STR.common.backupImportConfirm)) return;
+    snapshotBeforeImport(); // 上書きする前に今の状態を退避
+    BACKUP_KEYS.forEach(k=>{
+      if(data[k] != null) localStorage.setItem(k, data[k]); else localStorage.removeItem(k);
+    });
+    renderList();
+    alert(STR.common.backupImportSuccess);
+  };
+  reader.readAsText(file);
+}
+function restorePreImportSnapshot(){
+  let snap;
+  try{ snap = JSON.parse(localStorage.getItem('zouPreImportSnapshot') || 'null'); }catch(e){ snap = null; }
+  if(!snap){ alert(STR.common.backupNoSnapshot); return; }
+  if(!confirm(STR.common.backupRestoreSnapshotConfirm)) return;
+  BACKUP_KEYS.forEach(k=>{
+    if(snap[k] != null) localStorage.setItem(k, snap[k]); else localStorage.removeItem(k);
+  });
+  renderList();
+  alert(STR.common.backupImportSuccess);
+}
+document.getElementById('btnBackup').addEventListener('click', (ev)=>{
+  const rect = ev.currentTarget.getBoundingClientRect();
+  showContextMenu(rect.left, rect.bottom + 4, [
+    { label: STR.common.backupExportMenu, onClick: exportBackup },
+    { label: STR.common.backupImportMenu, onClick: ()=> document.getElementById('backupFileInput').click() },
+    { label: STR.common.backupRestoreMenu, onClick: restorePreImportSnapshot }
+  ]);
+});
+document.getElementById('backupFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importBackup(file);
+  e.target.value = '';
+});

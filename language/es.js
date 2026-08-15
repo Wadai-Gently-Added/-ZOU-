@@ -25,6 +25,15 @@ const LANG_ES = {
     itemDeleteConfirm: (name)=> `¿Eliminar "${name}"? Esta acción no se puede deshacer`,
     groupDeleteConfirm: (name, noun)=> `¿Eliminar "${name}"? Sus elementos ${noun} no se eliminarán, solo se desagruparán`,
 
+    backupExportMenu: "Exportar copia de seguridad",
+    backupImportMenu: "Importar copia de seguridad",
+    backupParseError: "No se pudo leer este archivo de copia de seguridad (puede estar dañado o tener un formato no compatible)",
+    backupImportConfirm: "Esto sobrescribirá tus datos actuales de Mis SVG / Mi HTML. ¿Continuar?",
+    backupImportSuccess: "¡Copia de seguridad importada!",
+
+    backupRestoreMenu: "Deshacer última importación",
+    backupRestoreSnapshotConfirm: "Esto restaura el estado justo antes de tu última importación, sobrescribiendo los datos actuales. ¿Continuar?",
+    backupNoSnapshot: "Aún no hay nada que restaurar (no se ha importado ninguna copia de seguridad)",
     tabSvg: 'Visor SVG',
     tabHtml: 'Visor HTML',
 

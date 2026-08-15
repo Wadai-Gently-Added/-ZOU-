@@ -25,6 +25,15 @@ const LANG_DE = {
     itemDeleteConfirm: (name)=> `„${name}" löschen? Dies kann nicht rückgängig gemacht werden`,
     groupDeleteConfirm: (name, noun)=> `„${name}" löschen? Die ${noun}-Elemente werden nicht gelöscht, nur aus der Gruppe entfernt`,
 
+    backupExportMenu: "Backup exportieren",
+    backupImportMenu: "Backup importieren",
+    backupParseError: "Diese Sicherungsdatei konnte nicht gelesen werden (möglicherweise beschädigt oder nicht unterstütztes Format)",
+    backupImportConfirm: "Dadurch werden deine aktuellen Meine-SVGs/Mein-HTML-Daten überschrieben. Fortfahren?",
+    backupImportSuccess: "Backup importiert!",
+
+    backupRestoreMenu: "Letzten Import rückgängig machen",
+    backupRestoreSnapshotConfirm: "Dadurch wird der Zustand vor dem letzten Import wiederhergestellt und die aktuellen Daten überschrieben. Fortfahren?",
+    backupNoSnapshot: "Es gibt noch nichts wiederherzustellen (es wurde kein Backup importiert)",
     tabSvg: 'SVG-Betrachter',
     tabHtml: 'HTML-Betrachter',
 

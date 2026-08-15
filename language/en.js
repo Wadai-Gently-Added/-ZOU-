@@ -28,7 +28,15 @@ const LANG_EN = {
     itemDeleteConfirm: (name)=> `Delete "${name}"? This cannot be undone`,
     groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`,
 
-    // --- tabs / language ---
+    backupExportMenu: "Export backup",
+    backupImportMenu: "Import backup",
+    backupParseError: "Could not read this backup file (it may be corrupted or an unsupported format)",
+    backupImportConfirm: "This will overwrite your current My SVGs / My HTML data. Continue?",
+    backupImportSuccess: "Backup imported!",
+
+    backupRestoreMenu: "Undo last import",
+    backupRestoreSnapshotConfirm: "This restores the state just before your last import, overwriting current data. Continue?",
+    backupNoSnapshot: "Nothing to restore yet (no backup has been imported)",    // --- tabs / language ---
     tabSvg: 'SVG Viewer',
     tabHtml: 'HTML Viewer',
 

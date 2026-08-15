@@ -25,6 +25,15 @@ const LANG_KO = {
     itemDeleteConfirm: (name)=> `"${name}"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다`,
     groupDeleteConfirm: (name, noun)=> `"${name}"을(를) 삭제하시겠습니까? ${noun} 항목은 삭제되지 않고 그룹에서만 해제됩니다`,
 
+    backupExportMenu: "백업 내보내기",
+    backupImportMenu: "백업 가져오기",
+    backupParseError: "이 백업 파일을 읽을 수 없습니다(손상되었거나 지원되지 않는 형식일 수 있습니다)",
+    backupImportConfirm: "가져오면 현재 마이 SVG / 마이 HTML 데이터가 덮어써집니다. 계속할까요?",
+    backupImportSuccess: "백업을 가져왔습니다!",
+
+    backupRestoreMenu: "마지막 가져오기 되돌리기",
+    backupRestoreSnapshotConfirm: "마지막 가져오기 직전 상태로 되돌립니다. 현재 데이터가 덮어써집니다. 계속할까요?",
+    backupNoSnapshot: "아직 되돌릴 데이터가 없습니다(가져온 백업이 없음)",
     tabSvg: 'SVG 뷰어',
     tabHtml: 'HTML 뷰어',
 

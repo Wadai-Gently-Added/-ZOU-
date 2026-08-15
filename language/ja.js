@@ -28,7 +28,15 @@ const LANG_JA = {
     itemDeleteConfirm: (name)=> `「${name}」を削除する？元に戻せないよ`,
     groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`,
 
-    // --- タブ / 言語 ---
+    backupExportMenu: "バックアップを書き出す",
+    backupImportMenu: "バックアップを読み込む",
+    backupParseError: "バックアップファイルを読み込めませんでした（壊れているか対応していない形式です）",
+    backupImportConfirm: "読み込むと、今のマイSVG／マイHTMLのデータが上書きされるよ。よろしい？",
+    backupImportSuccess: "バックアップを読み込みました！",
+
+    backupRestoreMenu: "直前のインポート前の状態に戻す",
+    backupRestoreSnapshotConfirm: "インポート直前の状態に戻すよ。今のデータは上書きされるけど大丈夫？",
+    backupNoSnapshot: "戻せるデータがまだ無いよ（一度もバックアップを読み込んでいない）",    // --- タブ / 言語 ---
     tabSvg: 'SVGビューワー',
     tabHtml: 'HTMLビューワー',
 
