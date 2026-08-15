@@ -487,7 +487,7 @@ let codeBaseline = ''; // 編集シートを開いた時点の内容。ここか
 
 // 2つの行配列を比較し、oldLinesに存在しない(=追加/変更された)newLines側の行indexをSetで返す
 // 行単位のLCS差分から、削除ブロックと挿入ブロックが1:1で隣接している箇所を「置換」とみなしてペアにする。
-// ペアになった行は、その中で実際に変わった文字範囲だけを後段のcharDiffRangeでピンポイント特定できる。
+// ペアになった行は、その中で実際に変わった文字範囲だけを後段のcharDiffHunksでピンポイント特定できる。
 // ペアにならない挿入行(対応する旧行が無い完全な新規行)はpureInsertとして丸ごとハイライト対象にする。
 function diffLineOps(oldLines, newLines){
   const n = oldLines.length, m = newLines.length;
@@ -531,15 +531,30 @@ function pairSubstitutions(ops){
   }
   return { subMap, pureInsert };
 }
-// 置換ペアの新旧2行から、共通の先頭/末尾を除いた「実際に変わった文字範囲」だけを取り出す
-function charDiffRange(oldLine, newLine){
-  let prefix = 0;
-  const maxP = Math.min(oldLine.length, newLine.length);
-  while(prefix < maxP && oldLine[prefix] === newLine[prefix]) prefix++;
-  let suffix = 0;
-  const maxS = Math.min(oldLine.length, newLine.length) - prefix;
-  while(suffix < maxS && oldLine[oldLine.length-1-suffix] === newLine[newLine.length-1-suffix]) suffix++;
-  return [prefix, newLine.length - suffix];
+// 置換ペアの新旧2行から、実際に変わった箇所を「複数の断片(hunk)」として取り出す。
+// 単純な共通接頭辞/接尾辞だけの比較だと、1行の中に離れた2箇所の変更があった場合
+// (例:全部置換で同じ行に2回ヒットした時)に、その間の変わってない部分まで
+// まとめてハイライト対象にしてしまう不具合があったため、文字単位のLCSで断片ごとに分離する。
+function charDiffHunks(oldLine, newLine){
+  const n = oldLine.length, m = newLine.length;
+  if(n*m > 40000) return [[0, newLine.length]]; // 長すぎる行は丸ごとハイライトにフォールバック(重い計算を回避)
+  const dp = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--){
+    for(let j=m-1;j>=0;j--){
+      dp[i][j] = oldLine[i] === newLine[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  const hunks = [];
+  let i=0, j=0, curStart=-1;
+  function closeHunk(endJ){ if(curStart!==-1 && endJ>curStart) hunks.push([curStart, endJ]); curStart=-1; }
+  while(i<n && j<m){
+    if(oldLine[i] === newLine[j]){ closeHunk(j); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ if(curStart===-1) curStart=j; i++; }
+    else { if(curStart===-1) curStart=j; j++; }
+  }
+  if(j<m){ if(curStart===-1) curStart=j; j=m; closeHunk(j); }
+  else closeHunk(j);
+  return hunks;
 }
 // 現在のcodeBox内容とcodeBaseline(編集シートを開いた時点)を比較し、実際に変わった箇所だけを
 // グローバル文字位置の範囲[[start,end], ...]として返す(行まるごとではなくピンポイント)
@@ -557,8 +572,8 @@ function computeChangedCharRanges(){
     if(pureInsert.has(idx)){
       if(line.length) ranges.push([lineStart, lineStart + line.length]);
     } else if(subMap.has(idx)){
-      const [s, e] = charDiffRange(oldLines[subMap.get(idx)], line);
-      if(e > s) ranges.push([lineStart + s, lineStart + e]);
+      const oldLine = oldLines[subMap.get(idx)];
+      charDiffHunks(oldLine, line).forEach(([s, e])=> ranges.push([lineStart + s, lineStart + e]));
     }
   });
   return ranges;

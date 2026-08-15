@@ -659,6 +659,8 @@ function restorePreImportSnapshot(){
   alert(STR.common.backupImportSuccess);
 }
 document.getElementById('btnBackup').addEventListener('click', (ev)=>{
+  // 開いている状態でもう一度押したら閉じるだけにする(押しっぱなしで開き直る違和感を無くす)
+  if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
   const rect = ev.currentTarget.getBoundingClientRect();
   showContextMenu(rect.left, rect.bottom + 4, [
     { label: STR.common.backupExportMenu, onClick: exportBackup },
