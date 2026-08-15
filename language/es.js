@@ -10,7 +10,8 @@ const LANG_ES = {
     printStartFailed: 'No se pudo iniciar la impresión. Inténtalo de nuevo',
     wakeLockFailed: 'No se pudo activar Mantener pantalla activa',
     codeEmpty: 'El código está vacío',
-    clipboardReadFailed: 'No se pudo leer el portapapeles. Safari puede requerir permiso en Ajustes. Pega manualmente con el botón "Pegar"',
+
+    codeApplyError: "No se pudo aplicar el código. Comprueba el contenido e inténtalo de nuevo",    clipboardReadFailed: 'No se pudo leer el portapapeles. Safari puede requerir permiso en Ajustes. Pega manualmente con el botón "Pegar"',
     unsavedPromptHtml: 'El contenido mostrado actualmente no se ha guardado.<br>¿Qué te gustaría hacer?',
     unsavedSaveThenOpen: 'Guardar y luego abrir',
     unsavedOpenWithoutSave: 'Abrir sin guardar',
@@ -25,8 +26,8 @@ const LANG_ES = {
     itemDeleteConfirm: (name)=> `¿Eliminar "${name}"? Esta acción no se puede deshacer`,
     groupDeleteConfirm: (name, noun)=> `¿Eliminar "${name}"? Sus elementos ${noun} no se eliminarán, solo se desagruparán`,
 
-    backupExportMenu: "Exportar copia de seguridad",
-    backupImportMenu: "Importar copia de seguridad",
+    backupExportMenu: "Exportar copia de seguridad (SVG + HTML)",
+    backupImportMenu: "Importar copia de seguridad (sobrescribe SVG + HTML)",
     backupParseError: "No se pudo leer este archivo de copia de seguridad (puede estar dañado o tener un formato no compatible)",
     backupImportConfirm: "Esto sobrescribirá tus datos actuales de Mis SVG / Mi HTML. ¿Continuar?",
     backupImportSuccess: "¡Copia de seguridad importada!",

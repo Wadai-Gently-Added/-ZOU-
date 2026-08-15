@@ -201,10 +201,10 @@ textarea#pasteArea{
   white-space:pre-wrap; word-wrap:break-word; overflow:hidden; pointer-events:none;
 }
 .code-line{ display:block; min-height:1.5em; }
-.code-line.changed{ background:rgba(255,196,0,.30); border-radius:2px; }
 .code-comment{ color:#4ec9ff; font-style:italic; font-weight:600; }
-.search-match{ background:rgba(90,160,255,.40); border-radius:2px; }
-.search-current{ background:rgba(255,64,190,.65); border-radius:2px; }
+.code-changed{ background:rgba(255,196,0,.42); border-radius:2px; }
+.search-match{ background:rgba(178,102,255,.42); border-radius:2px; }
+.search-match.search-current{ outline:2px solid #fff; outline-offset:-1px; }
 
 .code-search-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
 .code-search-row input[type="text"]{

@@ -10,7 +10,8 @@ const LANG_FR = {
     printStartFailed: "Impossible de démarrer l'impression. Veuillez réessayer",
     wakeLockFailed: "Impossible d'activer le maintien de l'écran allumé",
     codeEmpty: 'Le code est vide',
-    clipboardReadFailed: 'Impossible de lire le presse-papiers. Safari peut nécessiter une autorisation dans les réglages. Veuillez coller manuellement via le bouton « Coller »',
+
+    codeApplyError: "Impossible d'appliquer le code. Vérifiez le contenu et réessayez",    clipboardReadFailed: 'Impossible de lire le presse-papiers. Safari peut nécessiter une autorisation dans les réglages. Veuillez coller manuellement via le bouton « Coller »',
     unsavedPromptHtml: "Le contenu actuellement affiché n'a pas été enregistré.<br>Que souhaitez-vous faire ?",
     unsavedSaveThenOpen: 'Enregistrer puis ouvrir',
     unsavedOpenWithoutSave: 'Ouvrir sans enregistrer',
@@ -25,8 +26,8 @@ const LANG_FR = {
     itemDeleteConfirm: (name)=> `Supprimer « ${name} » ? Action irréversible`,
     groupDeleteConfirm: (name, noun)=> `Supprimer « ${name} » ? Les éléments ${noun} ne seront pas supprimés, juste dissociés`,
 
-    backupExportMenu: "Exporter la sauvegarde",
-    backupImportMenu: "Importer une sauvegarde",
+    backupExportMenu: "Exporter la sauvegarde (SVG + HTML)",
+    backupImportMenu: "Importer une sauvegarde (écrase SVG + HTML)",
     backupParseError: "Impossible de lire ce fichier de sauvegarde (il est peut-être corrompu ou dans un format non pris en charge)",
     backupImportConfirm: "Cela remplacera vos données actuelles Mes SVG / Mon HTML. Continuer ?",
     backupImportSuccess: "Sauvegarde importée !",

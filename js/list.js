@@ -187,10 +187,20 @@ function attachDrag(row){
   });
 }
 
+// 直前に登録した「メニュー外クリックで閉じる」リスナーへの参照。closeContextMenu()を
+// メニュー項目クリック経由(showContextMenuを介さない)で呼んだ場合に、このリスナーが
+// 消費されずdocumentに残り続けることがあり、次回メニューを開いた瞬間その場でこのリスナーが
+// 発火して即座に閉じてしまう不具合があった(連打すると2回目以降メニューが開かなくなる原因)。
+// closeContextMenu()の中で必ず明示的に除去することで解消する。
+let ctxOutsideClickHandler = null;
 function closeContextMenu(){
   const el = document.getElementById('ctxMenu');
   if(el) el.remove();
   document.querySelectorAll('.ctx-submenu').forEach(el2 => el2.remove());
+  if(ctxOutsideClickHandler){
+    document.removeEventListener('click', ctxOutsideClickHandler);
+    ctxOutsideClickHandler = null;
+  }
 }
 
 function positionFlyout(el, anchorRect){
@@ -273,7 +283,8 @@ function showContextMenu(x, y, options){
   menu.style.left = left + 'px';
   menu.style.top = top + 'px';
   setTimeout(()=>{
-    document.addEventListener('click', closeContextMenu, { once:true });
+    ctxOutsideClickHandler = closeContextMenu;
+    document.addEventListener('click', ctxOutsideClickHandler, { once:true });
   }, 0);
 }
 
@@ -322,7 +333,7 @@ function buildItemRow(item, i, groups, isTopLevel){
   const d = new Date(item.savedAt);
   const inSelectMode = printSelectActive;
   const handleHtml = inSelectMode
-    ? `<input type="checkbox" class="print-select-box" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
+    ? `<input type="checkbox" class="print-select-box" id="printSelect-${item.id}" name="printSelect-${item.id}" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
     : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
@@ -334,7 +345,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       <div class="name">${item.name}</div>
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
     </div>
-    <select class="group-select">${options.join('')}</select>
+    <select class="group-select" id="groupSelect-${item.id}" name="groupSelect-${item.id}">${options.join('')}</select>
     <button class="pin" title="${STR.common.pinTitle}">${item.pinned ? '📌' : '📍'}</button>
   `;
   if(inSelectMode){

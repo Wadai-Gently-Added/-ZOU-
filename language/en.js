@@ -13,7 +13,8 @@ const LANG_EN = {
     printStartFailed: 'Could not start printing. Please try again',
     wakeLockFailed: 'Could not enable Keep Awake',
     codeEmpty: 'Code is empty',
-    clipboardReadFailed: 'Could not read the clipboard. Safari may require permission in Settings. Please paste manually using the "Paste" button',
+
+    codeApplyError: "Couldn't apply the code. Please check the content and try again",    clipboardReadFailed: 'Could not read the clipboard. Safari may require permission in Settings. Please paste manually using the "Paste" button',
     unsavedPromptHtml: 'The content currently shown has not been saved.<br>What would you like to do?',
     unsavedSaveThenOpen: 'Save then open',
     unsavedOpenWithoutSave: 'Open without saving',
@@ -28,8 +29,8 @@ const LANG_EN = {
     itemDeleteConfirm: (name)=> `Delete "${name}"? This cannot be undone`,
     groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`,
 
-    backupExportMenu: "Export backup",
-    backupImportMenu: "Import backup",
+    backupExportMenu: "Export backup (SVG + HTML both)",
+    backupImportMenu: "Import backup (overwrites SVG + HTML both)",
     backupParseError: "Could not read this backup file (it may be corrupted or an unsupported format)",
     backupImportConfirm: "This will overwrite your current My SVGs / My HTML data. Continue?",
     backupImportSuccess: "Backup imported!",

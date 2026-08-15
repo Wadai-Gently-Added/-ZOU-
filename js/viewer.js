@@ -70,7 +70,7 @@ function loadSvgContent(text, name){
   const svgSource = extractSvgElement(text);
   if(!svgSource){
     alert(STR.svg.parseError);
-    return;
+    return false;
   }
   stage.innerHTML = '';
   const svgEl = document.importNode(svgSource, true);
@@ -87,6 +87,7 @@ function loadSvgContent(text, name){
   }
   fitToView();
   saveDraft('svg', currentName, svgEl.outerHTML); // 下書き自動保存(未登録でも次回復元できるように)
+  return true;
 }
 
 // HTMLモード: 読み込んだHTMLをそのままメイン画面に埋め込むと、そのHTML内のポップアップや
@@ -144,7 +145,7 @@ document.getElementById('btnHtmlInteract').onclick = ()=> setHtmlInteractMode(!h
 function loadHtmlContent(text, name){
   if(!text || !text.trim()){
     alert(STR.html.parseError);
-    return;
+    return false;
   }
   stage.innerHTML = '';
   const frame = document.createElement('iframe');
@@ -165,11 +166,11 @@ function loadHtmlContent(text, name){
   updateHtmlInteractButton();
   fitToView();
   saveDraft('html', currentName, text); // 下書き自動保存(未登録でも次回復元できるように)
+  return true;
 }
 
 function loadContent(text, name){
-  if(currentMode === 'html') loadHtmlContent(text, name);
-  else loadSvgContent(text, name);
+  return currentMode === 'html' ? loadHtmlContent(text, name) : loadSvgContent(text, name);
 }
 
 /* ---- pinch / pan ---- */
@@ -485,24 +486,82 @@ const codeHighlight = document.getElementById('codeHighlight');
 let codeBaseline = ''; // 編集シートを開いた時点の内容。ここからの変更行をハイライトする基準
 
 // 2つの行配列を比較し、oldLinesに存在しない(=追加/変更された)newLines側の行indexをSetで返す
-function diffChangedLines(oldLines, newLines){
-  const changed = new Set();
-  if(oldLines.length * newLines.length > 200000) return changed; // 巨大データでの重い計算を回避
+// 行単位のLCS差分から、削除ブロックと挿入ブロックが1:1で隣接している箇所を「置換」とみなしてペアにする。
+// ペアになった行は、その中で実際に変わった文字範囲だけを後段のcharDiffRangeでピンポイント特定できる。
+// ペアにならない挿入行(対応する旧行が無い完全な新規行)はpureInsertとして丸ごとハイライト対象にする。
+function diffLineOps(oldLines, newLines){
   const n = oldLines.length, m = newLines.length;
+  if(n*m > 200000) return null; // 巨大データでの重い計算を回避
   const dp = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
   for(let i=n-1;i>=0;i--){
     for(let j=m-1;j>=0;j--){
       dp[i][j] = oldLines[i] === newLines[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
     }
   }
+  const ops = [];
   let i=0, j=0;
   while(i<n && j<m){
-    if(oldLines[i] === newLines[j]){ i++; j++; }
-    else if(dp[i+1][j] >= dp[i][j+1]){ i++; }
-    else { changed.add(j); j++; }
+    if(oldLines[i] === newLines[j]){ ops.push({type:'same', oldIdx:i, newIdx:j}); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({type:'del', oldIdx:i}); i++; }
+    else { ops.push({type:'ins', newIdx:j}); j++; }
   }
-  while(j<m){ changed.add(j); j++; }
-  return changed;
+  while(i<n){ ops.push({type:'del', oldIdx:i}); i++; }
+  while(j<m){ ops.push({type:'ins', newIdx:j}); j++; }
+  return ops;
+}
+function pairSubstitutions(ops){
+  const subMap = new Map(); // newIdx -> oldIdx (1:1置換ペア)
+  const pureInsert = new Set(); // 対応する旧行が無い、丸ごと新規の行
+  let k = 0;
+  while(k < ops.length){
+    if(ops[k].type === 'del'){
+      let delStart = k;
+      while(k < ops.length && ops[k].type === 'del') k++;
+      const delCount = k - delStart;
+      let insStart = k;
+      while(k < ops.length && ops[k].type === 'ins') k++;
+      const insCount = k - insStart;
+      const pairCount = Math.min(delCount, insCount);
+      for(let p=0;p<pairCount;p++) subMap.set(ops[insStart+p].newIdx, ops[delStart+p].oldIdx);
+      for(let p=pairCount;p<insCount;p++) pureInsert.add(ops[insStart+p].newIdx);
+    } else if(ops[k].type === 'ins'){
+      pureInsert.add(ops[k].newIdx);
+      k++;
+    } else k++;
+  }
+  return { subMap, pureInsert };
+}
+// 置換ペアの新旧2行から、共通の先頭/末尾を除いた「実際に変わった文字範囲」だけを取り出す
+function charDiffRange(oldLine, newLine){
+  let prefix = 0;
+  const maxP = Math.min(oldLine.length, newLine.length);
+  while(prefix < maxP && oldLine[prefix] === newLine[prefix]) prefix++;
+  let suffix = 0;
+  const maxS = Math.min(oldLine.length, newLine.length) - prefix;
+  while(suffix < maxS && oldLine[oldLine.length-1-suffix] === newLine[newLine.length-1-suffix]) suffix++;
+  return [prefix, newLine.length - suffix];
+}
+// 現在のcodeBox内容とcodeBaseline(編集シートを開いた時点)を比較し、実際に変わった箇所だけを
+// グローバル文字位置の範囲[[start,end], ...]として返す(行まるごとではなくピンポイント)
+function computeChangedCharRanges(){
+  const oldLines = codeBaseline.split('\n');
+  const newLines = codeBox.value.split('\n');
+  const ops = diffLineOps(oldLines, newLines);
+  if(!ops) return [];
+  const { subMap, pureInsert } = pairSubstitutions(ops);
+  const ranges = [];
+  let offset = 0;
+  newLines.forEach((line, idx)=>{
+    const lineStart = offset;
+    offset += line.length + 1;
+    if(pureInsert.has(idx)){
+      if(line.length) ranges.push([lineStart, lineStart + line.length]);
+    } else if(subMap.has(idx)){
+      const [s, e] = charDiffRange(oldLines[subMap.get(idx)], line);
+      if(e > s) ranges.push([lineStart + s, lineStart + e]);
+    }
+  });
+  return ranges;
 }
 function findCommentRanges(text){
   const ranges = [];
@@ -511,7 +570,7 @@ function findCommentRanges(text){
   while((m = re.exec(text))) ranges.push([m.index, m.index + m[0].length]);
   return ranges;
 }
-// 1行分の範囲[lineStart,lineEnd)に、複数の色分けクラス(comment/search-match/search-current等)を
+// 1行分の範囲[lineStart,lineEnd)に、複数の色分けクラス(comment/search-match/code-changed等)を
 // 重なりも考慮して割り当ててHTMLを組み立てる(区間スイープ方式。境界点で分割→各区間の該当クラスをまとめる)
 function buildStyledLineHtml(text, lineStart, lineEnd, rangeSets){
   const points = new Set([lineStart, lineEnd]);
@@ -605,21 +664,20 @@ function replaceAllMatches(){
 function renderCodeHighlight(){
   const text = codeBox.value;
   const lines = text.split('\n');
-  const changedLines = diffChangedLines(codeBaseline.split('\n'), lines);
+  const changedRanges = computeChangedCharRanges(); // ピンポイントの変更箇所のみ(行まるごとではない)
   const commentRanges = findCommentRanges(text);
   const currentRanges = (searchCurrentIndex >= 0 && searchMatches[searchCurrentIndex]) ? [searchMatches[searchCurrentIndex]] : [];
-  const otherRanges = searchMatches.filter((_, i)=> i !== searchCurrentIndex);
   let offset = 0;
-  const html = lines.map((line, idx)=>{
+  const html = lines.map((line)=>{
     const lineStart = offset, lineEnd = offset + line.length;
     offset = lineEnd + 1;
     const segHtml = buildStyledLineHtml(text, lineStart, lineEnd, {
       'code-comment': commentRanges,
-      'search-match': otherRanges,
+      'code-changed': changedRanges,
+      'search-match': searchMatches,
       'search-current': currentRanges
     });
-    const cls = changedLines.has(idx) ? 'code-line changed' : 'code-line';
-    return `<span class="${cls}">${segHtml || ' '}</span>`;
+    return `<span class="code-line">${segHtml || ' '}</span>`;
   }).join('');
   codeHighlight.innerHTML = html;
 }
@@ -663,7 +721,17 @@ codeBackdrop.onclick = closeCode;
 document.getElementById('btnCodeApply').onclick = ()=>{
   const val = codeBox.value;
   if(!val.trim()){ alert(STR.common.codeEmpty); return; }
-  loadContent(val, currentName);
+  let ok = false;
+  try{
+    ok = loadContent(val, currentName);
+  }catch(err){
+    alert(STR.common.codeApplyError);
+    return;
+  }
+  // 解析失敗時はloadContent内で既にエラーを表示済み。ここで閉じてしまうと
+  // 編集内容が失われたまま画面が変わらず「反映されない」ように見えるため、
+  // 成功した時だけ閉じる(失敗時はシートを開いたままにして編集を続けられるようにする)
+  if(!ok) return;
   isDirty = true;
   closeCode();
 };

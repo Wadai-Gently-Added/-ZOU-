@@ -13,7 +13,8 @@ const LANG_JA = {
     printStartFailed: '印刷を開始できませんでした。もう一度試してください',
     wakeLockFailed: 'スリープ防止をオンにできませんでした',
     codeEmpty: 'コードが空です',
-    clipboardReadFailed: 'クリップボードを読み取れませんでした。Safariの設定で許可が必要な場合があります。「貼り付け」ボタンから手動で貼ってください',
+
+    codeApplyError: "コードの反映に失敗したよ。内容を確認してもう一度試してみて",    clipboardReadFailed: 'クリップボードを読み取れませんでした。Safariの設定で許可が必要な場合があります。「貼り付け」ボタンから手動で貼ってください',
     unsavedPromptHtml: '今表示中の内容が保存されていません。<br>どうしますか？',
     unsavedSaveThenOpen: '保存してから開く',
     unsavedOpenWithoutSave: '保存せず開く',
@@ -28,8 +29,8 @@ const LANG_JA = {
     itemDeleteConfirm: (name)=> `「${name}」を削除する？元に戻せないよ`,
     groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`,
 
-    backupExportMenu: "バックアップを書き出す",
-    backupImportMenu: "バックアップを読み込む",
+    backupExportMenu: "バックアップを書き出す（SVG＋HTML両方）",
+    backupImportMenu: "バックアップを読み込む（SVG＋HTML両方を上書き）",
     backupParseError: "バックアップファイルを読み込めませんでした（壊れているか対応していない形式です）",
     backupImportConfirm: "読み込むと、今のマイSVG／マイHTMLのデータが上書きされるよ。よろしい？",
     backupImportSuccess: "バックアップを読み込みました！",

@@ -10,7 +10,8 @@ const LANG_ZH = {
     printStartFailed: '无法开始打印，请重试',
     wakeLockFailed: '无法开启屏幕常亮',
     codeEmpty: '代码为空',
-    clipboardReadFailed: '无法读取剪贴板。Safari 可能需要在设置中授权，请使用"粘贴"按钮手动粘贴',
+
+    codeApplyError: "应用代码失败，请检查内容后重试",    clipboardReadFailed: '无法读取剪贴板。Safari 可能需要在设置中授权，请使用"粘贴"按钮手动粘贴',
     unsavedPromptHtml: '当前显示的内容尚未保存。<br>您想怎么做？',
     unsavedSaveThenOpen: '保存后打开',
     unsavedOpenWithoutSave: '不保存直接打开',
@@ -25,8 +26,8 @@ const LANG_ZH = {
     itemDeleteConfirm: (name)=> `确定删除"${name}"吗？此操作无法撤销`,
     groupDeleteConfirm: (name, noun)=> `确定删除"${name}"吗？其中的${noun}不会被删除，只会取消分组`,
 
-    backupExportMenu: "导出备份",
-    backupImportMenu: "导入备份",
+    backupExportMenu: "导出备份（SVG + HTML 全部）",
+    backupImportMenu: "导入备份（覆盖 SVG + HTML 全部）",
     backupParseError: "无法读取此备份文件（可能已损坏或格式不受支持）",
     backupImportConfirm: "导入将覆盖当前的“我的SVG／我的HTML”数据，是否继续？",
     backupImportSuccess: "备份已导入！",

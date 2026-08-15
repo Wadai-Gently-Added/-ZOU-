@@ -10,7 +10,8 @@ const LANG_PT = {
     printStartFailed: 'Não foi possível iniciar a impressão. Tente novamente',
     wakeLockFailed: 'Não foi possível ativar Manter tela ativa',
     codeEmpty: 'O código está vazio',
-    clipboardReadFailed: 'Não foi possível ler a área de transferência. O Safari pode exigir permissão nas Configurações. Cole manualmente usando o botão "Colar"',
+
+    codeApplyError: "Não foi possível aplicar o código. Verifique o conteúdo e tente novamente",    clipboardReadFailed: 'Não foi possível ler a área de transferência. O Safari pode exigir permissão nas Configurações. Cole manualmente usando o botão "Colar"',
     unsavedPromptHtml: 'O conteúdo exibido atualmente não foi salvo.<br>O que você gostaria de fazer?',
     unsavedSaveThenOpen: 'Salvar e depois abrir',
     unsavedOpenWithoutSave: 'Abrir sem salvar',
@@ -25,8 +26,8 @@ const LANG_PT = {
     itemDeleteConfirm: (name)=> `Excluir "${name}"? Isso não pode ser desfeito`,
     groupDeleteConfirm: (name, noun)=> `Excluir "${name}"? Os itens de ${noun} não serão excluídos, apenas desagrupados`,
 
-    backupExportMenu: "Exportar backup",
-    backupImportMenu: "Importar backup",
+    backupExportMenu: "Exportar backup (SVG + HTML)",
+    backupImportMenu: "Importar backup (substitui SVG + HTML)",
     backupParseError: "Não foi possível ler este arquivo de backup (pode estar corrompido ou em formato não suportado)",
     backupImportConfirm: "Isso substituirá seus dados atuais de Meus SVGs / Meu HTML. Continuar?",
     backupImportSuccess: "Backup importado!",

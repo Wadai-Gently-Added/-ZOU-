@@ -10,7 +10,8 @@ const LANG_DE = {
     printStartFailed: 'Drucken konnte nicht gestartet werden. Bitte erneut versuchen',
     wakeLockFailed: 'Bildschirm-wach-halten konnte nicht aktiviert werden',
     codeEmpty: 'Code ist leer',
-    clipboardReadFailed: 'Zwischenablage konnte nicht gelesen werden. Safari benötigt möglicherweise eine Berechtigung in den Einstellungen. Bitte manuell über die Schaltfläche „Einfügen" einfügen',
+
+    codeApplyError: "Der Code konnte nicht übernommen werden. Bitte Inhalt prüfen und erneut versuchen",    clipboardReadFailed: 'Zwischenablage konnte nicht gelesen werden. Safari benötigt möglicherweise eine Berechtigung in den Einstellungen. Bitte manuell über die Schaltfläche „Einfügen" einfügen',
     unsavedPromptHtml: 'Der aktuell angezeigte Inhalt wurde nicht gespeichert.<br>Was möchten Sie tun?',
     unsavedSaveThenOpen: 'Speichern und dann öffnen',
     unsavedOpenWithoutSave: 'Ohne Speichern öffnen',
@@ -25,8 +26,8 @@ const LANG_DE = {
     itemDeleteConfirm: (name)=> `„${name}" löschen? Dies kann nicht rückgängig gemacht werden`,
     groupDeleteConfirm: (name, noun)=> `„${name}" löschen? Die ${noun}-Elemente werden nicht gelöscht, nur aus der Gruppe entfernt`,
 
-    backupExportMenu: "Backup exportieren",
-    backupImportMenu: "Backup importieren",
+    backupExportMenu: "Backup exportieren (SVG + HTML)",
+    backupImportMenu: "Backup importieren (überschreibt SVG + HTML)",
     backupParseError: "Diese Sicherungsdatei konnte nicht gelesen werden (möglicherweise beschädigt oder nicht unterstütztes Format)",
     backupImportConfirm: "Dadurch werden deine aktuellen Meine-SVGs/Mein-HTML-Daten überschrieben. Fortfahren?",
     backupImportSuccess: "Backup importiert!",

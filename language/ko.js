@@ -10,7 +10,8 @@ const LANG_KO = {
     printStartFailed: '인쇄를 시작할 수 없습니다. 다시 시도해 주세요',
     wakeLockFailed: '화면 켜짐 유지를 활성화할 수 없습니다',
     codeEmpty: '코드가 비어 있습니다',
-    clipboardReadFailed: '클립보드를 읽을 수 없습니다. Safari 설정에서 권한이 필요할 수 있습니다. "붙여넣기" 버튼으로 직접 붙여넣어 주세요',
+
+    codeApplyError: "코드를 반영하지 못했습니다. 내용을 확인하고 다시 시도해 주세요",    clipboardReadFailed: '클립보드를 읽을 수 없습니다. Safari 설정에서 권한이 필요할 수 있습니다. "붙여넣기" 버튼으로 직접 붙여넣어 주세요',
     unsavedPromptHtml: '현재 표시된 내용이 저장되지 않았습니다.<br>어떻게 하시겠습니까?',
     unsavedSaveThenOpen: '저장한 후 열기',
     unsavedOpenWithoutSave: '저장하지 않고 열기',
@@ -25,8 +26,8 @@ const LANG_KO = {
     itemDeleteConfirm: (name)=> `"${name}"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다`,
     groupDeleteConfirm: (name, noun)=> `"${name}"을(를) 삭제하시겠습니까? ${noun} 항목은 삭제되지 않고 그룹에서만 해제됩니다`,
 
-    backupExportMenu: "백업 내보내기",
-    backupImportMenu: "백업 가져오기",
+    backupExportMenu: "백업 내보내기 (SVG + HTML 모두)",
+    backupImportMenu: "백업 가져오기 (SVG + HTML 모두 덮어쓰기)",
     backupParseError: "이 백업 파일을 읽을 수 없습니다(손상되었거나 지원되지 않는 형식일 수 있습니다)",
     backupImportConfirm: "가져오면 현재 마이 SVG / 마이 HTML 데이터가 덮어써집니다. 계속할까요?",
     backupImportSuccess: "백업을 가져왔습니다!",
