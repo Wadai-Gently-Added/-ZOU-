@@ -683,12 +683,13 @@ function replaceAllMatches(){
   renderCodeHighlight(changedRanges);
 }
 
-function renderCodeHighlight(overrideChangedRanges){
+function renderCodeHighlight(extraChangedRanges){
   const text = codeBox.value;
   const lines = text.split('\n');
-  // 置換直後など「実際に変えた範囲」が分かっている時はそれをそのまま使い、
-  // 通常の手入力時のみ下書きとの文字差分から自動検出する
-  const changedRanges = overrideChangedRanges || computeChangedCharRanges();
+  // 下書き(codeBaseline)からの累積差分は常に計算する(1回前の変更ハイライトが
+  // 次の置換で消えてしまわないように)。置換直後はそこに「今回置換した正確な範囲」も
+  // 重ねて渡すことで、文字の偶然の一致による色のバラつきをその箇所だけ補正する
+  const changedRanges = computeChangedCharRanges().concat(extraChangedRanges || []);
   const commentRanges = findCommentRanges(text);
   const currentRanges = (searchCurrentIndex >= 0 && searchMatches[searchCurrentIndex]) ? [searchMatches[searchCurrentIndex]] : [];
   let offset = 0;
