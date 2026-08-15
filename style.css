@@ -16,6 +16,7 @@
 *::-webkit-scrollbar-thumb:hover{ background:#4a4f58; }
 html,body{
   margin:0; padding:0; height:100%;
+  width:100%; max-width:100%; overflow-x:hidden;
   background:var(--bg); color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
   overscroll-behavior:none;
@@ -23,9 +24,17 @@ html,body{
 }
 #app{
   display:flex; flex-direction:column; height:100vh; height:100dvh;
+  max-width:100%; overflow-x:hidden;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* 選択モードや長い言語ラベルなどで中の要素が伸びても、横方向にはみ出させず枠内に収める。
+   flexの子要素はデフォルトでは中身の幅より縮まないため、min-width:0を全体に効かせて
+   ツール自体が横スクロールしてしまう(=はみ出て見えなくなる)事故を防ぐ */
+.row, .compact-row, .sheet, #savedList, .saved-item, .code-search-row{
+  min-width:0; max-width:100%; overflow-x:hidden;
+}
+.row > *, .compact-row > *{ min-width:0; }
 
 /* ---------- top bar ---------- */
 #topbar{

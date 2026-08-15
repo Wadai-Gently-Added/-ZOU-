@@ -653,9 +653,12 @@ function gotoMatch(delta){
 function replaceCurrentMatch(){
   if(!searchMatches.length || searchCurrentIndex < 0) return;
   const [s, e] = searchMatches[searchCurrentIndex];
-  codeBox.value = codeBox.value.slice(0, s) + codeReplaceInput.value + codeBox.value.slice(e);
+  const replacement = codeReplaceInput.value;
+  codeBox.value = codeBox.value.slice(0, s) + replacement + codeBox.value.slice(e);
   computeSearchMatches();
-  renderCodeHighlight();
+  // 置換した範囲は分かりきっているので、文字差分の当てずっぽうな一致(コメント通りの数字が
+  // たまたま同じだと「変わってない」判定されてしまう等)に頼らず、そのままピンポイントで示す
+  renderCodeHighlight([[s, s + replacement.length]]);
 }
 function replaceAllMatches(){
   const term = codeSearchInput.value;
@@ -664,22 +667,28 @@ function replaceAllMatches(){
   const caseSensitive = codeSearchCase.checked;
   const hay = caseSensitive ? text : text.toLowerCase();
   const needle = caseSensitive ? term : term.toLowerCase();
+  const replacement = codeReplaceInput.value;
   let out = '', pos = 0;
+  const changedRanges = [];
   while(true){
     const found = hay.indexOf(needle, pos);
     if(found === -1){ out += text.slice(pos); break; }
-    out += text.slice(pos, found) + codeReplaceInput.value;
+    out += text.slice(pos, found);
+    changedRanges.push([out.length, out.length + replacement.length]);
+    out += replacement;
     pos = found + needle.length;
   }
   codeBox.value = out;
   computeSearchMatches();
-  renderCodeHighlight();
+  renderCodeHighlight(changedRanges);
 }
 
-function renderCodeHighlight(){
+function renderCodeHighlight(overrideChangedRanges){
   const text = codeBox.value;
   const lines = text.split('\n');
-  const changedRanges = computeChangedCharRanges(); // ピンポイントの変更箇所のみ(行まるごとではない)
+  // 置換直後など「実際に変えた範囲」が分かっている時はそれをそのまま使い、
+  // 通常の手入力時のみ下書きとの文字差分から自動検出する
+  const changedRanges = overrideChangedRanges || computeChangedCharRanges();
   const commentRanges = findCommentRanges(text);
   const currentRanges = (searchCurrentIndex >= 0 && searchMatches[searchCurrentIndex]) ? [searchMatches[searchCurrentIndex]] : [];
   let offset = 0;
