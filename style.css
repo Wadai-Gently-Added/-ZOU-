@@ -55,6 +55,12 @@ html,body{
 }
 .mode-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
 .mode-tab:active{ background:#262a31; }
+/* Edgeのタブのように、マウスカーソルが乗ってる時だけ色を変える。
+   タッチ操作だとタップ後も:hoverが残って色が張り付いて見えることがあるため、
+   実際にホバーできる(=カーソルがある)環境限定で効かせる */
+@media (hover: hover){
+  .mode-tab:not(.active):hover{ color:var(--text); background:rgba(255,255,255,.04); }
+}
 #langSelect{
   flex:0 0 auto; align-self:center; margin-right:8px;
   background:var(--panel); color:var(--sub); border:1px solid var(--line);
