@@ -89,7 +89,9 @@ const LANG_EN = {
 
     // --- context/long-press menu (item) ---
     itemMenuRename: '✏️ Rename',
-    itemMenuPrint: '🖨 Print',
+
+    itemMenuDuplicate: "📄 Duplicate",
+    itemDuplicateSuffix: " (copy)",    itemMenuPrint: '🖨 Print',
     itemMenuNewGroup: '🆕 Create new group',
     itemMenuMoveToGroup: (name)=> `📁 Move to ${name}`,
     itemMenuUngroup: '🚫 Remove from group',

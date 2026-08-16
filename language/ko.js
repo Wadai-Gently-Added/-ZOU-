@@ -78,7 +78,9 @@ const LANG_KO = {
     btnDoPrint: '🖨 인쇄',
 
     itemMenuRename: '✏️ 이름 변경',
-    itemMenuPrint: '🖨 인쇄',
+
+    itemMenuDuplicate: "📄 복제",
+    itemDuplicateSuffix: " (사본)",    itemMenuPrint: '🖨 인쇄',
     itemMenuNewGroup: '🆕 새 그룹 만들기',
     itemMenuMoveToGroup: (name)=> `📁 ${name}(으)로 이동`,
     itemMenuUngroup: '🚫 그룹 해제',

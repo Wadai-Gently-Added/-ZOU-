@@ -78,7 +78,9 @@ const LANG_FR = {
     btnDoPrint: '🖨 Imprimer',
 
     itemMenuRename: '✏️ Renommer',
-    itemMenuPrint: '🖨 Imprimer',
+
+    itemMenuDuplicate: "📄 Dupliquer",
+    itemDuplicateSuffix: " (copie)",    itemMenuPrint: '🖨 Imprimer',
     itemMenuNewGroup: '🆕 Créer un nouveau groupe',
     itemMenuMoveToGroup: (name)=> `📁 Déplacer vers ${name}`,
     itemMenuUngroup: '🚫 Retirer du groupe',

@@ -78,7 +78,9 @@ const LANG_RU = {
     btnDoPrint: '🖨 Печать',
 
     itemMenuRename: '✏️ Переименовать',
-    itemMenuPrint: '🖨 Печать',
+
+    itemMenuDuplicate: "📄 Дублировать",
+    itemDuplicateSuffix: " (копия)",    itemMenuPrint: '🖨 Печать',
     itemMenuNewGroup: '🆕 Создать новую группу',
     itemMenuMoveToGroup: (name)=> `📁 Переместить в ${name}`,
     itemMenuUngroup: '🚫 Убрать из группы',

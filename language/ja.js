@@ -89,7 +89,9 @@ const LANG_JA = {
 
     // --- 右クリック/長押しメニュー(アイテム) ---
     itemMenuRename: '✏️ 名前を変更',
-    itemMenuPrint: '🖨 印刷',
+
+    itemMenuDuplicate: "📄 複製",
+    itemDuplicateSuffix: " (コピー)",    itemMenuPrint: '🖨 印刷',
     itemMenuNewGroup: '🆕 新しいグループを作る',
     itemMenuMoveToGroup: (name)=> `📁 ${name} へ移動`,
     itemMenuUngroup: '🚫 グループ解除',

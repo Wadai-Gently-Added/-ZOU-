@@ -431,9 +431,12 @@ function downloadCurrentFile(){
 
 /* ---- wake lock (常時点灯) ---- */
 // pointer:coarse判定でもPCで表示されるケースがあったため、確実にスマホ/タブレットだけに
-// 絞れるUA(ユーザーエージェント)文字列判定に切り替える
+// 絞れるUA(ユーザーエージェント)文字列判定に切り替える。
+// ただしiPadOS 13以降のSafariは初期設定でUAが「Macintosh」を名乗る(PCと見分けが付かない)ため、
+// それだけだとiPadでボタンが消えてしまう。タッチ対応のMacintosh名乗り=iPadとみなして追加で拾う
 const wakeBtn = document.getElementById('btnWake');
-const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const isIPadOSDisguisedAsMac = /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || isIPadOSDisguisedAsMac;
 const wakeSupported = ('wakeLock' in navigator) && isMobileDevice;
 if(!wakeSupported){
   wakeBtn.style.display = 'none';
@@ -487,7 +490,7 @@ let codeBaseline = ''; // 編集シートを開いた時点の内容。ここか
 
 // 2つの行配列を比較し、oldLinesに存在しない(=追加/変更された)newLines側の行indexをSetで返す
 // 行単位のLCS差分から、削除ブロックと挿入ブロックが1:1で隣接している箇所を「置換」とみなしてペアにする。
-// ペアになった行は、その中で実際に変わった文字範囲だけを後段のcharDiffHunksでピンポイント特定できる。
+// ペアになった行は、その中で実際に変わった文字範囲だけを後段のtokenDiffHunksでピンポイント特定できる。
 // ペアにならない挿入行(対応する旧行が無い完全な新規行)はpureInsertとして丸ごとハイライト対象にする。
 function diffLineOps(oldLines, newLines){
   const n = oldLines.length, m = newLines.length;
@@ -535,24 +538,38 @@ function pairSubstitutions(ops){
 // 単純な共通接頭辞/接尾辞だけの比較だと、1行の中に離れた2箇所の変更があった場合
 // (例:全部置換で同じ行に2回ヒットした時)に、その間の変わってない部分まで
 // まとめてハイライト対象にしてしまう不具合があったため、文字単位のLCSで断片ごとに分離する。
-function charDiffHunks(oldLine, newLine){
-  const n = oldLine.length, m = newLine.length;
-  if(n*m > 40000) return [[0, newLine.length]]; // 長すぎる行は丸ごとハイライトにフォールバック(重い計算を回避)
+// 1文字ずつの比較だと「150→300」のように、たまたま同じ文字(この例だと末尾の"0")を
+// 拾って「変化なし」と誤判定し、色がまだらになる弱点があった。それを避けるため、
+// 英数字の連続(単語・数値のまとまり)を1トークンとして扱い、トークン単位で比較する。
+// これなら"150"と"300"は「別のトークン」として丸ごと1色でハイライトされる。
+function tokenize(line){
+  return line.match(/[A-Za-z0-9_]+|[^A-Za-z0-9_]/g) || [];
+}
+function tokenDiffHunks(oldLine, newLine){
+  const oldTokens = tokenize(oldLine), newTokens = tokenize(newLine);
+  const n = oldTokens.length, m = newTokens.length;
+  if(n*m > 20000) return [[0, newLine.length]]; // 長すぎる行は丸ごとハイライトにフォールバック(重い計算を回避)
   const dp = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
   for(let i=n-1;i>=0;i--){
     for(let j=m-1;j>=0;j--){
-      dp[i][j] = oldLine[i] === newLine[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+      dp[i][j] = oldTokens[i] === newTokens[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
     }
   }
+  // トークンindex -> 新テキスト側での開始文字位置
+  const tokenStart = new Array(m+1);
+  { let pos=0; for(let t=0;t<m;t++){ tokenStart[t]=pos; pos+=newTokens[t].length; } tokenStart[m]=pos; }
   const hunks = [];
   let i=0, j=0, curStart=-1;
-  function closeHunk(endJ){ if(curStart!==-1 && endJ>curStart) hunks.push([curStart, endJ]); curStart=-1; }
-  while(i<n && j<m){
-    if(oldLine[i] === newLine[j]){ closeHunk(j); i++; j++; }
-    else if(dp[i+1][j] >= dp[i][j+1]){ if(curStart===-1) curStart=j; i++; }
-    else { if(curStart===-1) curStart=j; j++; }
+  function closeHunk(endTok){
+    if(curStart!==-1){ const endPos = tokenStart[endTok]; if(endPos>curStart) hunks.push([curStart, endPos]); }
+    curStart=-1;
   }
-  if(j<m){ if(curStart===-1) curStart=j; j=m; closeHunk(j); }
+  while(i<n && j<m){
+    if(oldTokens[i] === newTokens[j]){ closeHunk(j); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ if(curStart===-1) curStart=tokenStart[j]; i++; }
+    else { if(curStart===-1) curStart=tokenStart[j]; j++; }
+  }
+  if(j<m){ if(curStart===-1) curStart=tokenStart[j]; j=m; closeHunk(j); }
   else closeHunk(j);
   return hunks;
 }
@@ -572,8 +589,7 @@ function computeChangedCharRanges(){
     if(pureInsert.has(idx)){
       if(line.length) ranges.push([lineStart, lineStart + line.length]);
     } else if(subMap.has(idx)){
-      const oldLine = oldLines[subMap.get(idx)];
-      charDiffHunks(oldLine, line).forEach(([s, e])=> ranges.push([lineStart + s, lineStart + e]));
+      tokenDiffHunks(oldLines[subMap.get(idx)], line).forEach(([s, e])=> ranges.push([lineStart + s, lineStart + e]));
     }
   });
   return ranges;
@@ -653,12 +669,9 @@ function gotoMatch(delta){
 function replaceCurrentMatch(){
   if(!searchMatches.length || searchCurrentIndex < 0) return;
   const [s, e] = searchMatches[searchCurrentIndex];
-  const replacement = codeReplaceInput.value;
-  codeBox.value = codeBox.value.slice(0, s) + replacement + codeBox.value.slice(e);
+  codeBox.value = codeBox.value.slice(0, s) + codeReplaceInput.value + codeBox.value.slice(e);
   computeSearchMatches();
-  // 置換した範囲は分かりきっているので、文字差分の当てずっぽうな一致(コメント通りの数字が
-  // たまたま同じだと「変わってない」判定されてしまう等)に頼らず、そのままピンポイントで示す
-  renderCodeHighlight([[s, s + replacement.length]]);
+  renderCodeHighlight();
 }
 function replaceAllMatches(){
   const term = codeSearchInput.value;
@@ -667,29 +680,25 @@ function replaceAllMatches(){
   const caseSensitive = codeSearchCase.checked;
   const hay = caseSensitive ? text : text.toLowerCase();
   const needle = caseSensitive ? term : term.toLowerCase();
-  const replacement = codeReplaceInput.value;
   let out = '', pos = 0;
-  const changedRanges = [];
   while(true){
     const found = hay.indexOf(needle, pos);
     if(found === -1){ out += text.slice(pos); break; }
-    out += text.slice(pos, found);
-    changedRanges.push([out.length, out.length + replacement.length]);
-    out += replacement;
+    out += text.slice(pos, found) + codeReplaceInput.value;
     pos = found + needle.length;
   }
   codeBox.value = out;
   computeSearchMatches();
-  renderCodeHighlight(changedRanges);
+  renderCodeHighlight();
 }
 
-function renderCodeHighlight(extraChangedRanges){
+function renderCodeHighlight(){
   const text = codeBox.value;
   const lines = text.split('\n');
-  // 下書き(codeBaseline)からの累積差分は常に計算する(1回前の変更ハイライトが
-  // 次の置換で消えてしまわないように)。置換直後はそこに「今回置換した正確な範囲」も
-  // 重ねて渡すことで、文字の偶然の一致による色のバラつきをその箇所だけ補正する
-  const changedRanges = computeChangedCharRanges().concat(extraChangedRanges || []);
+  // トークン単位の差分なので、置換直後でも文字の偶然の一致に惑わされず正しく検出できる。
+  // 下書き(codeBaseline)との比較を毎回フルで行うので、何回置換や編集を重ねても
+  // それまでの変更ハイライトが消えたり欠けたりしない
+  const changedRanges = computeChangedCharRanges();
   const commentRanges = findCommentRanges(text);
   const currentRanges = (searchCurrentIndex >= 0 && searchMatches[searchCurrentIndex]) ? [searchMatches[searchCurrentIndex]] : [];
   let offset = 0;

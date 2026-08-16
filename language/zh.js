@@ -78,7 +78,9 @@ const LANG_ZH = {
     btnDoPrint: '🖨 打印',
 
     itemMenuRename: '✏️ 重命名',
-    itemMenuPrint: '🖨 打印',
+
+    itemMenuDuplicate: "📄 复制",
+    itemDuplicateSuffix: " (副本)",    itemMenuPrint: '🖨 打印',
     itemMenuNewGroup: '🆕 新建分组',
     itemMenuMoveToGroup: (name)=> `📁 移动到 ${name}`,
     itemMenuUngroup: '🚫 取消分组',

@@ -78,7 +78,9 @@ const LANG_EL = {
     btnDoPrint: '🖨 Εκτύπωση',
 
     itemMenuRename: '✏️ Μετονομασία',
-    itemMenuPrint: '🖨 Εκτύπωση',
+
+    itemMenuDuplicate: "📄 Διπλασιασμός",
+    itemDuplicateSuffix: " (αντίγραφο)",    itemMenuPrint: '🖨 Εκτύπωση',
     itemMenuNewGroup: '🆕 Δημιουργία νέας ομάδας',
     itemMenuMoveToGroup: (name)=> `📁 Μετακίνηση στο ${name}`,
     itemMenuUngroup: '🚫 Αφαίρεση από την ομάδα',

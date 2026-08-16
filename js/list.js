@@ -397,6 +397,30 @@ function buildItemRow(item, i, groups, isTopLevel){
       setSaved(cur);
       renderList();
     }});
+    opts.push({ label: STR.common.itemMenuDuplicate, onClick: ()=>{
+      // Edgeのタブ複製のように、同じグループ内にそのままコピーを1件追加する。
+      // カスタマイズの土台としてすぐ使えるよう、名前だけ「(コピー)」を付けて区別する
+      const cur = getSaved();
+      const copy = {
+        id: 's' + Date.now() + Math.random().toString(36).slice(2,7),
+        name: item.name + STR.common.itemDuplicateSuffix,
+        content: item.content,
+        savedAt: new Date().toISOString(),
+        modifiedAt: new Date().toISOString(),
+        pinned: false,
+        group: item.group || null
+      };
+      const idx = cur.findIndex(x=>x.id===item.id);
+      cur.splice(idx + 1, 0, copy);
+      setSaved(cur);
+      const order = getTopOrder();
+      if(!copy.group){
+        const pos = order.findIndex(e=> e.type==='item' && e.id===item.id);
+        order.splice(pos + 1, 0, { type:'item', id: copy.id });
+        setTopOrder(order);
+      }
+      renderList();
+    }});
     opts.push({ label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
       openSinglePrint(item.name, item.content, mode, { savedAt: item.savedAt, modifiedAt: item.modifiedAt });
     })});
