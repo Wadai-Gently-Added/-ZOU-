@@ -3,6 +3,21 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- 開発中の診断用: どこかのJSでエラーが起きたら画面上部に赤帯で表示する。
+     iPadなどF12(開発者ツール)が使えない端末でも、実際のエラー内容がその場で分かるようにするため。
+     全てのscriptタグより先に読み込み、他ファイルのエラーも漏らさず拾う -->
+<script>
+window.addEventListener('error', function(e){
+  try{
+    var msg = '⚠️ JSエラー: ' + (e.message||'不明') + '\n' + (e.filename||'') + ' 行:' + (e.lineno||'?') + ':' + (e.colno||'?');
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font-size:12px;padding:10px;white-space:pre-wrap;word-break:break-all;font-family:monospace;';
+    box.textContent = msg;
+    document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(box); });
+    if(document.body) document.body.appendChild(box);
+  }catch(err){}
+});
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">

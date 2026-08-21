@@ -272,7 +272,7 @@ document.querySelectorAll('.bgtoggle button').forEach(btn=>{
 document.getElementById('btnClipboard').onclick = async ()=>{
   try{
     const text = await navigator.clipboard.readText();
-    guardedLoad(()=>{ loadContent(text, STR.common.fromClipboardName); isDirty = true; });
+    guardedLoad(()=>{ loadContent(text, STR.common.fromClipboardName); isDirty = true; setDraftDirty(currentMode, true); });
   }catch(err){
     alert(STR.common.clipboardReadFailed);
   }
@@ -289,7 +289,7 @@ pasteBackdrop.onclick = closePaste;
 document.getElementById('btnPasteLoad').onclick = ()=>{
   const val = document.getElementById('pasteBox').value;
   closePaste();
-  guardedLoad(()=>{ loadContent(val, STR.common.manualPasteName); isDirty = true; });
+  guardedLoad(()=>{ loadContent(val, STR.common.manualPasteName); isDirty = true; setDraftDirty(currentMode, true); });
 };
 
 /* ---- file input ---- */
@@ -298,7 +298,7 @@ document.getElementById('fileInput').onchange = (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = ()=> guardedLoad(()=>{ loadContent(reader.result, file.name); isDirty = true; });
+  reader.onload = ()=> guardedLoad(()=>{ loadContent(reader.result, file.name); isDirty = true; setDraftDirty(currentMode, true); });
   reader.readAsText(file);
   e.target.value = '';
 };
@@ -343,6 +343,7 @@ function saveCurrent(){
   arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: currentContentString(), savedAt: now, modifiedAt: now, pinned:false, group:null });
   setSaved(arr.slice(0, 100));
   isDirty = false;
+  setDraftDirty(currentMode, false); // 登録済みになったので、次回起動時に「保存しますか」を聞かなくていい
   return true;
 }
 
@@ -767,5 +768,6 @@ document.getElementById('btnCodeApply').onclick = ()=>{
   // 成功した時だけ閉じる(失敗時はシートを開いたままにして編集を続けられるようにする)
   if(!ok) return;
   isDirty = true;
+  setDraftDirty(currentMode, true);
   closeCode();
 };

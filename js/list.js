@@ -372,6 +372,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     guardedLoad(()=>{
       loadContent(item.content, item.name);
       isDirty = false;
+      setDraftDirty(currentMode, false); // マイSVG/マイHTMLと同じ内容なので「未登録」扱いを外す
       renderList();
     });
   });

@@ -160,7 +160,10 @@ function restoreDraftIntoState(mode){
   if(!draft || !draft.content) return;
   const st = modeState[mode];
   st.name = draft.name;
-  st.dirty = true;
+  // 下書きに保存しておいた「未登録かどうか」をそのまま復元する。ここを毎回trueに
+  // 固定してしまうと、実際は何も変わってないのに開くたびに「保存しますか」と
+  // 聞かれ続ける不具合になる(古い下書きにdirtyが無ければ安全側のtrueとして扱う)
+  st.dirty = (draft.dirty !== false);
   if(mode === 'html'){
     st.htmlSource = draft.content;
     const frame = document.createElement('iframe');

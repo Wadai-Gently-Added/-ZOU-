@@ -81,7 +81,9 @@ function draftKey(mode){ return mode === 'html' ? 'htmlViewerDraft' : 'svgViewer
 function saveDraft(mode, name, content){
   try{
     if(content){
-      localStorage.setItem(draftKey(mode), JSON.stringify({ name: name || null, content, savedAt: new Date().toISOString() }));
+      // dirty(=マイSVG/マイHTMLに未登録)は、新規に読み込んだ内容は既定でtrueにしておき、
+      // 呼び出し側がisDirtyを確定させた直後にsetDraftDirty()で正しい値に上書きしてもらう
+      localStorage.setItem(draftKey(mode), JSON.stringify({ name: name || null, content, dirty: true, savedAt: new Date().toISOString() }));
     } else {
       localStorage.removeItem(draftKey(mode));
     }
@@ -90,6 +92,14 @@ function saveDraft(mode, name, content){
 function getDraft(mode){
   try{ return JSON.parse(localStorage.getItem(draftKey(mode)) || 'null'); }
   catch(e){ return null; }
+}
+// isDirtyの実際の値を下書きにも反映しておく。これをしないと、次回起動時に復元した下書きが
+// 「登録済みで何も変わってないのに毎回“保存しますか？”と聞かれる」事故になる
+function setDraftDirty(mode, dirty){
+  const draft = getDraft(mode);
+  if(!draft) return;
+  draft.dirty = dirty;
+  try{ localStorage.setItem(draftKey(mode), JSON.stringify(draft)); }catch(e){}
 }
 // 閉じる直前にどちらのタブ(svg/html)を見ていたかを覚えておき、次回そのタブから開けるようにする
 function getLastMode(){
