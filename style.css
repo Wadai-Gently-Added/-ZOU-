@@ -59,11 +59,10 @@ html,body{
 .mode-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
 .mode-tab:active{ background:#262a31; }
 /* Edgeのタブのように、マウスカーソルが乗ってる時だけ色を変える。
-   タッチ操作だとタップ後も:hoverが残って色が張り付いて見えることがあるため、
-   実際にホバーできる(=カーソルがある)環境限定で効かせる */
-@media (hover: hover){
-  .mode-tab:not(.active):hover{ color:var(--text); background:rgba(255,255,255,.04); }
-}
+   @media(hover:hover)でマウス環境限定にする方式は、タッチ対応PCだと環境によって
+   正しく判定されないことがあったため、ここでは条件を付けずに常時有効にする
+   (タッチ端末でタップ後に一瞬色が残るのは実害が小さいトレードオフとして許容) */
+.mode-tab:not(.active):hover{ color:var(--text); background:rgba(255,255,255,.04); }
 #langSelect{
   flex:0 0 auto; align-self:center; margin-right:8px;
   background:var(--panel); color:var(--sub); border:1px solid var(--line);
@@ -87,11 +86,9 @@ html,body{
 .pillgroup button:last-child{ border-right:none; }
 .pillgroup button:active{ background:#262a31; }
 /* 📂マイSVG/マイHTMLや🖊コードなど、上段のボタン全部にもカーソルを乗せた時の色変化を効かせる。
-   タブと同じくホバーできる環境限定(タッチ操作だと押した後も色が残って見えるため) */
-@media (hover: hover){
-  .topbtn:not(.active):hover{ background:#20242b; border-color:#3a3f47; }
-  .pillgroup button:hover{ background:#20242b; }
-}
+   こちらも同じ理由でメディアクエリの条件は付けない */
+.topbtn:not(.active):hover{ background:#20242b; border-color:#3a3f47; }
+.pillgroup button:hover{ background:#20242b; }
 /* 画面が狭い時、タイトル+ボタン4つが1行に収まりきらず2段になってしまっていたのを解消。
    ボタンの余白と文字サイズを詰めて、折り返さず横1列に収める */
 @media (max-width:430px){
