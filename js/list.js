@@ -373,6 +373,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       loadContent(item.content, item.name);
       isDirty = false;
       setDraftDirty(currentMode, false); // マイSVG/マイHTMLと同じ内容なので「未登録」扱いを外す
+      currentSourceItemId = item.id; // 「編集して新規保存」した時、このすぐ下に置くために覚えておく
       renderList();
     });
   });

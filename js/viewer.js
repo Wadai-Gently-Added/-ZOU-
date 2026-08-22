@@ -9,6 +9,8 @@ const wrap = document.getElementById('viewerWrap');
 
 let scale = 1, tx = 0, ty = 0;
 let currentName = null;
+let currentSourceItemId = null; // 今表示中の内容が、マイSVG/マイHTMLのどのアイテムから読み込まれたか
+                                  // (「編集して新規保存」した時、その元アイテムのすぐ下に置くために使う)
 let suppressClickUntil = 0;
 let isDirty = false;
 
@@ -272,7 +274,7 @@ document.querySelectorAll('.bgtoggle button').forEach(btn=>{
 document.getElementById('btnClipboard').onclick = async ()=>{
   try{
     const text = await navigator.clipboard.readText();
-    guardedLoad(()=>{ loadContent(text, STR.common.fromClipboardName); isDirty = true; setDraftDirty(currentMode, true); });
+    guardedLoad(()=>{ loadContent(text, STR.common.fromClipboardName); isDirty = true; setDraftDirty(currentMode, true); currentSourceItemId = null; });
   }catch(err){
     alert(STR.common.clipboardReadFailed);
   }
@@ -289,7 +291,7 @@ pasteBackdrop.onclick = closePaste;
 document.getElementById('btnPasteLoad').onclick = ()=>{
   const val = document.getElementById('pasteBox').value;
   closePaste();
-  guardedLoad(()=>{ loadContent(val, STR.common.manualPasteName); isDirty = true; setDraftDirty(currentMode, true); });
+  guardedLoad(()=>{ loadContent(val, STR.common.manualPasteName); isDirty = true; setDraftDirty(currentMode, true); currentSourceItemId = null; });
 };
 
 /* ---- file input ---- */
@@ -298,7 +300,7 @@ document.getElementById('fileInput').onchange = (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = ()=> guardedLoad(()=>{ loadContent(reader.result, file.name); isDirty = true; setDraftDirty(currentMode, true); });
+  reader.onload = ()=> guardedLoad(()=>{ loadContent(reader.result, file.name); isDirty = true; setDraftDirty(currentMode, true); currentSourceItemId = null; });
   reader.readAsText(file);
   e.target.value = '';
 };
@@ -340,8 +342,26 @@ function saveCurrent(){
   const name = prompt(STR.common.savePrompt, suggested);
   if(name === null) return false;
   const now = new Date().toISOString();
-  arr.unshift({ id: 's' + Date.now() + Math.random().toString(36).slice(2,7), name, content: currentContentString(), savedAt: now, modifiedAt: now, pinned:false, group:null });
+  const newId = 's' + Date.now() + Math.random().toString(36).slice(2,7);
+  // 元になったアイテムがあれば、そのグループを引き継いだ上で、一覧の並び順も
+  // 元アイテムのすぐ下に差し込む(そうしないと新規保存が毎回一番下に行ってしまい、
+  // 元のアイテムから遠く離れて分かりづらくなるため)
+  const sourceItem = currentSourceItemId ? arr.find(it => it.id === currentSourceItemId) : null;
+  arr.unshift({ id: newId, name, content: currentContentString(), savedAt: now, modifiedAt: now, pinned:false, group: sourceItem ? sourceItem.group : null });
   setSaved(arr.slice(0, 100));
+  if(sourceItem){
+    const order = getTopOrder();
+    if(!sourceItem.group){
+      const pos = order.findIndex(e=> e.type==='item' && e.id===sourceItem.id);
+      if(pos !== -1){
+        order.splice(pos + 1, 0, { type:'item', id: newId });
+        setTopOrder(order);
+      }
+    }
+    // グループ内の場合は、グループ自体の並び順は保たれたままアイテムが追加されるだけなので、
+    // 元アイテムのすぐ隣というピクセル単位の位置までは保証しないが、同じグループ内には収まる
+  }
+  currentSourceItemId = newId; // 保存後は「今表示中=この新しいアイテム」という扱いに更新
   isDirty = false;
   setDraftDirty(currentMode, false); // 登録済みになったので、次回起動時に「保存しますか」を聞かなくていい
   return true;
