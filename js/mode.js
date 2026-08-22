@@ -162,8 +162,9 @@ function restoreDraftIntoState(mode){
   st.name = draft.name;
   // 下書きに保存しておいた「未登録かどうか」をそのまま復元する。ここを毎回trueに
   // 固定してしまうと、実際は何も変わってないのに開くたびに「保存しますか」と
-  // 聞かれ続ける不具合になる(古い下書きにdirtyが無ければ安全側のtrueとして扱う)
-  st.dirty = (draft.dirty !== false);
+  // 聞かれ続ける不具合になる。dirtyの記録が無い古い下書き(この仕組みを入れる前の
+  // データ)は、安全側のtrueだと逆に毎回聞かれ続けて不便なため、falseとして扱う
+  st.dirty = (draft.dirty === true);
   if(mode === 'html'){
     st.htmlSource = draft.content;
     const frame = document.createElement('iframe');

@@ -375,10 +375,7 @@ function showUnsavedPrompt(onProceed){
   backdrop.className = 'color-pick-backdrop';
   const panel = document.createElement('div');
   panel.className = 'color-pick-panel';
-  // 【調査用の一時的な表示】なぜこのダイアログが出たのか(どのモードで、下書きの登録状態が
-  // どうなってるか)を画面に出す。原因の切り分けができたら消す
-  const debugInfo = `[調査用] mode=${currentMode} / isDirty=${isDirty} / draft.dirty=${JSON.stringify((getDraft(currentMode)||{}).dirty)}`;
-  panel.innerHTML = `<div class="color-pick-title">${STR.common.unsavedPromptHtml}</div><div style="font-size:10px; color:var(--sub); margin-bottom:8px; word-break:break-all;">${debugInfo}</div>`;
+  panel.innerHTML = `<div class="color-pick-title">${STR.common.unsavedPromptHtml}</div>`;
   const row1 = document.createElement('button');
   row1.className = 'btn accent';
   row1.style.width = '100%'; row1.style.marginBottom = '8px';
