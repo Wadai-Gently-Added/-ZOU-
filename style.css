@@ -434,13 +434,3 @@ input[type=file]{ display:none; }
   .print-page{ page-break-after:always; }
   .print-page:last-child{ page-break-after:auto; }
 }
-
-/* 【調査用・一時】ホバーという仕組み自体が本当に効いているかを、見逃しようがない形で検証する。
-   !importantで他の指定を全部上書きするので、これでも変化が無ければ「特定のボタンの色選びの
-   問題」ではなく、もっと根本的な理由(CSSファイル自体が読み込めていない等)を疑う。
-   原因が分かったらこのブロックごと削除する */
-button:hover, .mode-tab:hover, select:hover{
-  outline: 4px solid red !important;
-  background: yellow !important;
-  color: black !important;
-}
