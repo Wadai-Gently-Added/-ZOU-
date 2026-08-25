@@ -187,10 +187,20 @@ function attachDrag(row){
   });
 }
 
+// 直前に登録した「メニュー外クリックで閉じる」リスナーへの参照。closeContextMenu()を
+// メニュー項目クリック経由(showContextMenuを介さない)で呼んだ場合に、このリスナーが
+// 消費されずdocumentに残り続けることがあり、次回メニューを開いた瞬間その場でこのリスナーが
+// 発火して即座に閉じてしまう不具合があった(連打すると2回目以降メニューが開かなくなる原因)。
+// closeContextMenu()の中で必ず明示的に除去することで解消する。
+let ctxOutsideClickHandler = null;
 function closeContextMenu(){
   const el = document.getElementById('ctxMenu');
   if(el) el.remove();
   document.querySelectorAll('.ctx-submenu').forEach(el2 => el2.remove());
+  if(ctxOutsideClickHandler){
+    document.removeEventListener('click', ctxOutsideClickHandler);
+    ctxOutsideClickHandler = null;
+  }
 }
 
 function positionFlyout(el, anchorRect){
@@ -273,7 +283,8 @@ function showContextMenu(x, y, options){
   menu.style.left = left + 'px';
   menu.style.top = top + 'px';
   setTimeout(()=>{
-    document.addEventListener('click', closeContextMenu, { once:true });
+    ctxOutsideClickHandler = closeContextMenu;
+    document.addEventListener('click', ctxOutsideClickHandler, { once:true });
   }, 0);
 }
 
@@ -322,7 +333,7 @@ function buildItemRow(item, i, groups, isTopLevel){
   const d = new Date(item.savedAt);
   const inSelectMode = printSelectActive;
   const handleHtml = inSelectMode
-    ? `<input type="checkbox" class="print-select-box" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
+    ? `<input type="checkbox" class="print-select-box" id="printSelect-${item.id}" name="printSelect-${item.id}" ${printSelectedIds.has(item.id) ? 'checked' : ''}>`
     : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
@@ -334,7 +345,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       <div class="name">${item.name}</div>
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
     </div>
-    <select class="group-select">${options.join('')}</select>
+    <select class="group-select" id="groupSelect-${item.id}" name="groupSelect-${item.id}">${options.join('')}</select>
     <button class="pin" title="${STR.common.pinTitle}">${item.pinned ? '📌' : '📍'}</button>
   `;
   if(inSelectMode){
@@ -344,8 +355,13 @@ function buildItemRow(item, i, groups, isTopLevel){
       if(box.checked) printSelectedIds.add(item.id); else printSelectedIds.delete(item.id);
       updatePrintSelectBar();
     });
+  } else {
+    // ドラッグ用ハンドルのクリックは行全体の読込に伝播させない(ドラッグ操作と誤反応しないように)
+    row.querySelector('.handle').addEventListener('click', ev=> ev.stopPropagation());
   }
-  row.querySelector('.thumb').addEventListener('click', ()=>{
+  // Edgeのタブのように行全体のどこをクリックしても読み込まれるようにする
+  // (以前はサムネイル画像を直接クリックしないと反映されず、動線として分かりにくかった)
+  row.addEventListener('click', ()=>{
     if(Date.now() < suppressClickUntil) return;
     if(inSelectMode){
       const box = row.querySelector('.print-select-box');
@@ -356,6 +372,8 @@ function buildItemRow(item, i, groups, isTopLevel){
     guardedLoad(()=>{
       loadContent(item.content, item.name);
       isDirty = false;
+      setDraftDirty(currentMode, false); // マイSVG/マイHTMLと同じ内容なので「未登録」扱いを外す
+      currentSourceItemId = item.id; // 「編集して新規保存」した時、このすぐ下に置くために覚えておく
       renderList();
     });
   });
@@ -379,6 +397,30 @@ function buildItemRow(item, i, groups, isTopLevel){
       const it = cur.find(x=>x.id===item.id);
       if(it){ it.name = newName.trim(); it.modifiedAt = new Date().toISOString(); }
       setSaved(cur);
+      renderList();
+    }});
+    opts.push({ label: STR.common.itemMenuDuplicate, onClick: ()=>{
+      // Edgeのタブ複製のように、同じグループ内にそのままコピーを1件追加する。
+      // カスタマイズの土台としてすぐ使えるよう、名前だけ「(コピー)」を付けて区別する
+      const cur = getSaved();
+      const copy = {
+        id: 's' + Date.now() + Math.random().toString(36).slice(2,7),
+        name: item.name + STR.common.itemDuplicateSuffix,
+        content: item.content,
+        savedAt: new Date().toISOString(),
+        modifiedAt: new Date().toISOString(),
+        pinned: false,
+        group: item.group || null
+      };
+      const idx = cur.findIndex(x=>x.id===item.id);
+      cur.splice(idx + 1, 0, copy);
+      setSaved(cur);
+      const order = getTopOrder();
+      if(!copy.group){
+        const pos = order.findIndex(e=> e.type==='item' && e.id===item.id);
+        order.splice(pos + 1, 0, { type:'item', id: copy.id });
+        setTopOrder(order);
+      }
       renderList();
     }});
     opts.push({ label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
@@ -589,3 +631,153 @@ function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList
 document.getElementById('listBtn').onclick = openList;
 document.getElementById('listCancel').onclick = closeList;
 listBackdrop.onclick = closeList;
+
+/* ---- バックアップ書き出し／読み込み ----
+   マイSVG・マイHTML両方の登録データ・グループ・並び順を丸ごと1つのJSONにまとめて書き出す。
+   読み込み時は上書きしてしまう前に必ず今のデータを退避スナップショットへ保存しておき、
+   「復元したら別のデータが消えた」という二次事故を防ぐ(直前のインポート前に戻すメニューで復旧可能) */
+const BACKUP_KEYS = ['svgViewerSavedItems','svgViewerGroups','svgViewerTopOrder',
+                      'htmlViewerSavedItems','htmlViewerGroups','htmlViewerTopOrder'];
+function exportBackup(){
+  const data = { appName: '造 -ZOU-', exportedAt: new Date().toISOString() };
+  BACKUP_KEYS.forEach(k=>{ data[k] = localStorage.getItem(k); });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `zou-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function snapshotBeforeImport(){
+  const snap = { savedAt: new Date().toISOString() };
+  BACKUP_KEYS.forEach(k=>{ snap[k] = localStorage.getItem(k); });
+  try{ localStorage.setItem('zouPreImportSnapshot', JSON.stringify(snap)); }catch(e){}
+}
+function importBackup(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }catch(e){ alert(STR.common.backupParseError); return; }
+    const hasAny = data && BACKUP_KEYS.some(k => k in data);
+    if(!hasAny){ alert(STR.common.backupParseError); return; }
+    if(!confirm(STR.common.backupImportConfirm)) return;
+    snapshotBeforeImport(); // 上書きする前に今の状態を退避
+    BACKUP_KEYS.forEach(k=>{
+      if(data[k] != null) localStorage.setItem(k, data[k]); else localStorage.removeItem(k);
+    });
+    renderList();
+    alert(STR.common.backupImportSuccess);
+  };
+  reader.readAsText(file);
+}
+function restorePreImportSnapshot(){
+  let snap;
+  try{ snap = JSON.parse(localStorage.getItem('zouPreImportSnapshot') || 'null'); }catch(e){ snap = null; }
+  if(!snap){ alert(STR.common.backupNoSnapshot); return; }
+  if(!confirm(STR.common.backupRestoreSnapshotConfirm)) return;
+  BACKUP_KEYS.forEach(k=>{
+    if(snap[k] != null) localStorage.setItem(k, snap[k]); else localStorage.removeItem(k);
+  });
+  renderList();
+  alert(STR.common.backupImportSuccess);
+}
+
+/* ---- 端末間の手動同期(マージ) ----
+   iCloud Drive/OneDriveなど、複数端末から見える場所に置いたバックアップJSONを
+   都度選んで読み込むための機能。importBackup()と違って「丸ごと上書き」はせず、
+   IDが無ければ新規追加・IDがあってもmodifiedAtが新しい方だけ採用、という
+   マージを行い、結果を色分け(追加=緑, 更新=黄)で表示する。
+   ファイルへの書き込みは行わず、選んだファイルを読むだけなので、どの端末・
+   どのブラウザ(iPhoneのSafariも含む)でも同じ手順で使える */
+function parseJsonArray(str){
+  try{ const v = JSON.parse(str || '[]'); return Array.isArray(v) ? v : []; }
+  catch(e){ return []; }
+}
+function itemTimestamp(it){
+  const t = new Date(it.modifiedAt || it.savedAt || 0).getTime();
+  return isNaN(t) ? 0 : t;
+}
+function mergeBackup(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }catch(e){ alert(STR.common.backupParseError); return; }
+    const hasAny = data && BACKUP_KEYS.some(k => k in data);
+    if(!hasAny){ alert(STR.common.backupParseError); return; }
+    snapshotBeforeImport(); // マージでも、万一のために直前の状態は退避しておく
+
+    let addedCount = 0, updatedCount = 0;
+    ['svg','html'].forEach(mode=>{
+      const itemsKey = mode === 'html' ? 'htmlViewerSavedItems' : 'svgViewerSavedItems';
+      const groupsKeyName = mode === 'html' ? 'htmlViewerGroups' : 'svgViewerGroups';
+      const currentItems = parseJsonArray(localStorage.getItem(itemsKey));
+      const incomingItems = parseJsonArray(data[itemsKey]);
+      const byId = new Map(currentItems.map(it => [it.id, it]));
+      incomingItems.forEach(inItem=>{
+        const cur = byId.get(inItem.id);
+        if(!cur){
+          currentItems.push(inItem);
+          byId.set(inItem.id, inItem);
+          addedCount++;
+        } else if(itemTimestamp(inItem) > itemTimestamp(cur)){
+          Object.assign(cur, inItem);
+          updatedCount++;
+        }
+      });
+      localStorage.setItem(itemsKey, JSON.stringify(currentItems));
+
+      // グループはID単位で無ければ追加するだけ(名前や色の食い違いは触らない)
+      const currentGroups = parseJsonArray(localStorage.getItem(groupsKeyName));
+      const incomingGroups = parseJsonArray(data[groupsKeyName]);
+      const groupIds = new Set(currentGroups.map(g => g.id));
+      incomingGroups.forEach(g=>{ if(!groupIds.has(g.id)){ currentGroups.push(g); groupIds.add(g.id); } });
+      localStorage.setItem(groupsKeyName, JSON.stringify(currentGroups));
+    });
+
+    renderList();
+    showMergeResult(addedCount, updatedCount);
+  };
+  reader.readAsText(file);
+}
+function showMergeResult(added, updated){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'color-pick-backdrop';
+  const panel = document.createElement('div');
+  panel.className = 'color-pick-panel';
+  panel.innerHTML = `
+    <div class="color-pick-title">${STR.common.mergeResultTitle}</div>
+    <div style="margin-bottom:14px; font-size:13px;">
+      <div style="color:#7ed17e; font-weight:600;">➕ ${STR.common.mergeAddedLabel}: ${added}</div>
+      <div style="color:#e0c85c; font-weight:600; margin-top:4px;">🔄 ${STR.common.mergeUpdatedLabel}: ${updated}</div>
+    </div>
+    <button class="btn accent" id="mergeResultClose" style="width:100%;">OK</button>
+  `;
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.getElementById('mergeResultClose').onclick = ()=> backdrop.remove();
+  backdrop.onclick = (e)=>{ if(e.target === backdrop) backdrop.remove(); };
+}
+document.getElementById('btnBackup').addEventListener('click', (ev)=>{
+  // 開いている状態でもう一度押したら閉じるだけにする(押しっぱなしで開き直る違和感を無くす)
+  if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
+  const rect = ev.currentTarget.getBoundingClientRect();
+  showContextMenu(rect.left, rect.bottom + 4, [
+    { label: STR.common.backupExportMenu, onClick: exportBackup },
+    { label: STR.common.backupSyncMenu, onClick: ()=> document.getElementById('backupSyncFileInput').click() },
+    { label: STR.common.backupImportMenu, onClick: ()=> document.getElementById('backupFileInput').click() },
+    { label: STR.common.backupRestoreMenu, onClick: restorePreImportSnapshot }
+  ]);
+});
+document.getElementById('backupFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importBackup(file);
+  e.target.value = '';
+});
+document.getElementById('backupSyncFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) mergeBackup(file);
+  e.target.value = '';
+});
