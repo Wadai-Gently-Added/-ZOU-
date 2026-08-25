@@ -684,12 +684,89 @@ function restorePreImportSnapshot(){
   renderList();
   alert(STR.common.backupImportSuccess);
 }
+
+/* ---- 端末間の手動同期(マージ) ----
+   iCloud Drive/OneDriveなど、複数端末から見える場所に置いたバックアップJSONを
+   都度選んで読み込むための機能。importBackup()と違って「丸ごと上書き」はせず、
+   IDが無ければ新規追加・IDがあってもmodifiedAtが新しい方だけ採用、という
+   マージを行い、結果を色分け(追加=緑, 更新=黄)で表示する。
+   ファイルへの書き込みは行わず、選んだファイルを読むだけなので、どの端末・
+   どのブラウザ(iPhoneのSafariも含む)でも同じ手順で使える */
+function parseJsonArray(str){
+  try{ const v = JSON.parse(str || '[]'); return Array.isArray(v) ? v : []; }
+  catch(e){ return []; }
+}
+function itemTimestamp(it){
+  const t = new Date(it.modifiedAt || it.savedAt || 0).getTime();
+  return isNaN(t) ? 0 : t;
+}
+function mergeBackup(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }catch(e){ alert(STR.common.backupParseError); return; }
+    const hasAny = data && BACKUP_KEYS.some(k => k in data);
+    if(!hasAny){ alert(STR.common.backupParseError); return; }
+    snapshotBeforeImport(); // マージでも、万一のために直前の状態は退避しておく
+
+    let addedCount = 0, updatedCount = 0;
+    ['svg','html'].forEach(mode=>{
+      const itemsKey = mode === 'html' ? 'htmlViewerSavedItems' : 'svgViewerSavedItems';
+      const groupsKeyName = mode === 'html' ? 'htmlViewerGroups' : 'svgViewerGroups';
+      const currentItems = parseJsonArray(localStorage.getItem(itemsKey));
+      const incomingItems = parseJsonArray(data[itemsKey]);
+      const byId = new Map(currentItems.map(it => [it.id, it]));
+      incomingItems.forEach(inItem=>{
+        const cur = byId.get(inItem.id);
+        if(!cur){
+          currentItems.push(inItem);
+          byId.set(inItem.id, inItem);
+          addedCount++;
+        } else if(itemTimestamp(inItem) > itemTimestamp(cur)){
+          Object.assign(cur, inItem);
+          updatedCount++;
+        }
+      });
+      localStorage.setItem(itemsKey, JSON.stringify(currentItems));
+
+      // グループはID単位で無ければ追加するだけ(名前や色の食い違いは触らない)
+      const currentGroups = parseJsonArray(localStorage.getItem(groupsKeyName));
+      const incomingGroups = parseJsonArray(data[groupsKeyName]);
+      const groupIds = new Set(currentGroups.map(g => g.id));
+      incomingGroups.forEach(g=>{ if(!groupIds.has(g.id)){ currentGroups.push(g); groupIds.add(g.id); } });
+      localStorage.setItem(groupsKeyName, JSON.stringify(currentGroups));
+    });
+
+    renderList();
+    showMergeResult(addedCount, updatedCount);
+  };
+  reader.readAsText(file);
+}
+function showMergeResult(added, updated){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'color-pick-backdrop';
+  const panel = document.createElement('div');
+  panel.className = 'color-pick-panel';
+  panel.innerHTML = `
+    <div class="color-pick-title">${STR.common.mergeResultTitle}</div>
+    <div style="margin-bottom:14px; font-size:13px;">
+      <div style="color:#7ed17e; font-weight:600;">➕ ${STR.common.mergeAddedLabel}: ${added}</div>
+      <div style="color:#e0c85c; font-weight:600; margin-top:4px;">🔄 ${STR.common.mergeUpdatedLabel}: ${updated}</div>
+    </div>
+    <button class="btn accent" id="mergeResultClose" style="width:100%;">OK</button>
+  `;
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.getElementById('mergeResultClose').onclick = ()=> backdrop.remove();
+  backdrop.onclick = (e)=>{ if(e.target === backdrop) backdrop.remove(); };
+}
 document.getElementById('btnBackup').addEventListener('click', (ev)=>{
   // 開いている状態でもう一度押したら閉じるだけにする(押しっぱなしで開き直る違和感を無くす)
   if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
   const rect = ev.currentTarget.getBoundingClientRect();
   showContextMenu(rect.left, rect.bottom + 4, [
     { label: STR.common.backupExportMenu, onClick: exportBackup },
+    { label: STR.common.backupSyncMenu, onClick: ()=> document.getElementById('backupSyncFileInput').click() },
     { label: STR.common.backupImportMenu, onClick: ()=> document.getElementById('backupFileInput').click() },
     { label: STR.common.backupRestoreMenu, onClick: restorePreImportSnapshot }
   ]);
@@ -697,5 +774,10 @@ document.getElementById('btnBackup').addEventListener('click', (ev)=>{
 document.getElementById('backupFileInput').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(file) importBackup(file);
+  e.target.value = '';
+});
+document.getElementById('backupSyncFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) mergeBackup(file);
   e.target.value = '';
 });
