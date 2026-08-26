@@ -638,14 +638,36 @@ listBackdrop.onclick = closeList;
    「復元したら別のデータが消えた」という二次事故を防ぐ(直前のインポート前に戻すメニューで復旧可能) */
 const BACKUP_KEYS = ['svgViewerSavedItems','svgViewerGroups','svgViewerTopOrder',
                       'htmlViewerSavedItems','htmlViewerGroups','htmlViewerTopOrder'];
-function exportBackup(){
+async function exportBackup(){
   const data = { appName: '造 -ZOU-', exportedAt: new Date().toISOString() };
   BACKUP_KEYS.forEach(k=>{ data[k] = localStorage.getItem(k); });
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+  const filename = `zou-backup-${new Date().toISOString().slice(0,10)}.json`;
+
+  // Chrome/Edgeは保存先を選べる「名前を付けて保存」画面が使える(showSaveFilePicker)。
+  // iCloud Drive/OneDriveの同期フォルダを毎回選んで保存できるようになるので、
+  // 複数端末での🔗同期運用がしやすくなる。対応してないブラウザ(Safari等)では
+  // 今まで通りダウンロードフォルダへの保存にフォールバックする
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(json);
+      await writable.close();
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return; // ユーザーがキャンセルした場合は何もしない
+      // それ以外のエラーは下のフォールバックへ
+    }
+  }
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `zou-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
