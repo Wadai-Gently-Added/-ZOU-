@@ -33,7 +33,11 @@ const LANG_ES = {
     backupImportSuccess: "¡Copia de seguridad importada!",
 
     backupRestoreMenu: "Deshacer última importación",
-    backupRestoreSnapshotConfirm: "Esto restaura el estado justo antes de tu última importación, sobrescribiendo los datos actuales. ¿Continuar?",
+
+    backupSyncMenu: "🔗 Sincronizar con copia de seguridad (solo nuevos/actualizados)",
+    mergeResultTitle: "Sincronizado",
+    mergeAddedLabel: "Añadidos",
+    mergeUpdatedLabel: "Actualizados",    backupRestoreSnapshotConfirm: "Esto restaura el estado justo antes de tu última importación, sobrescribiendo los datos actuales. ¿Continuar?",
     backupNoSnapshot: "Aún no hay nada que restaurar (no se ha importado ninguna copia de seguridad)",
 
     searchToggle: "🔍 Buscar/Reemplazar",

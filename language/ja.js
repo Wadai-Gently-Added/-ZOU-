@@ -36,7 +36,11 @@ const LANG_JA = {
     backupImportSuccess: "バックアップを読み込みました！",
 
     backupRestoreMenu: "直前のインポート前の状態に戻す",
-    backupRestoreSnapshotConfirm: "インポート直前の状態に戻すよ。今のデータは上書きされるけど大丈夫？",
+
+    backupSyncMenu: "🔗 バックアップと同期(追加・更新分だけ取り込む)",
+    mergeResultTitle: "同期しました",
+    mergeAddedLabel: "新規追加",
+    mergeUpdatedLabel: "更新",    backupRestoreSnapshotConfirm: "インポート直前の状態に戻すよ。今のデータは上書きされるけど大丈夫？",
     backupNoSnapshot: "戻せるデータがまだ無いよ（一度もバックアップを読み込んでいない）",    // --- タブ / 言語 ---
 
     searchToggle: "🔍 検索/置換",

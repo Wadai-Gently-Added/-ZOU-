@@ -33,7 +33,11 @@ const LANG_KO = {
     backupImportSuccess: "백업을 가져왔습니다!",
 
     backupRestoreMenu: "마지막 가져오기 되돌리기",
-    backupRestoreSnapshotConfirm: "마지막 가져오기 직전 상태로 되돌립니다. 현재 데이터가 덮어써집니다. 계속할까요?",
+
+    backupSyncMenu: "🔗 백업과 동기화(신규/변경분만 반영)",
+    mergeResultTitle: "동기화 완료",
+    mergeAddedLabel: "추가됨",
+    mergeUpdatedLabel: "업데이트됨",    backupRestoreSnapshotConfirm: "마지막 가져오기 직전 상태로 되돌립니다. 현재 데이터가 덮어써집니다. 계속할까요?",
     backupNoSnapshot: "아직 되돌릴 데이터가 없습니다(가져온 백업이 없음)",
 
     searchToggle: "🔍 찾기/바꾸기",

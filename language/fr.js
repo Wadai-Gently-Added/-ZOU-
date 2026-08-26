@@ -33,7 +33,11 @@ const LANG_FR = {
     backupImportSuccess: "Sauvegarde importée !",
 
     backupRestoreMenu: "Annuler la dernière importation",
-    backupRestoreSnapshotConfirm: "Cela restaure l'état juste avant votre dernière importation, écrasant les données actuelles. Continuer ?",
+
+    backupSyncMenu: "🔗 Synchroniser avec la sauvegarde (nouveaux/modifiés uniquement)",
+    mergeResultTitle: "Synchronisé",
+    mergeAddedLabel: "Ajoutés",
+    mergeUpdatedLabel: "Mis à jour",    backupRestoreSnapshotConfirm: "Cela restaure l'état juste avant votre dernière importation, écrasant les données actuelles. Continuer ?",
     backupNoSnapshot: "Rien à restaurer pour l'instant (aucune sauvegarde importée)",
 
     searchToggle: "🔍 Rechercher/Remplacer",
