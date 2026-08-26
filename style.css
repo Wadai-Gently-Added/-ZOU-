@@ -50,29 +50,48 @@ html,body{
 /* ---------- mode tabs ---------- */
 #modeTabs{
   display:flex; flex-shrink:0; border-bottom:1px solid var(--line); background:var(--panel);
-  position:relative; z-index:5; /* 上端付近で他要素にホバーを吸われないよう前面に */
+  position:relative; z-index:5;
 }
 .mode-tab{
-  flex:1; background-color:transparent; border:none; color:var(--sub);
+  flex:1; border:none; color:var(--sub);
   padding:10px 0; font-size:13px; font-weight:600;
   border-bottom:2px solid transparent;
   cursor:pointer;
   position:relative; z-index:1;
-  transition: color .15s ease, background-color .15s ease, border-bottom-color .15s ease;
+  /* appearance:auto(UA既定)のままだと background-color / color が
+     一部環境で計算スタイルに反映されない。none にして自前で描く */
+  -webkit-appearance:none; appearance:none;
+  background-color:transparent;
+  background-image:none;
+  box-shadow:none;
+  transition: color .15s ease, background-color .15s ease, box-shadow .15s ease, border-bottom-color .15s ease, -webkit-text-fill-color .15s ease;
 }
-.mode-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
-.mode-tab:active{ background-color:#262a31; }
-/* Edgeのタブのように、マウスカーソルが乗ってる時だけ色を変える。
-   CSSの:hoverだけだと一部環境(特にEdge)でタブにだけ反応しない事例があったため、
-   JSが付ける.is-hoverクラスでも同じ見た目になるようにする(二重化)。
-   @media(hover:hover)は付けない(タッチ対応PCで判定が不安定なため) */
+.mode-tab.active{
+  color:var(--accent);
+  -webkit-text-fill-color:var(--accent);
+  border-bottom-color:var(--accent);
+}
+.mode-tab:active{
+  background-color:#262a31;
+  box-shadow:inset 0 0 0 999px #262a31;
+}
+/*
+  ホバー色:
+  - background-color だけだと appearance 由来で効かない環境がある
+  - そのため background-color + inset box-shadow の二重化
+  - CSS :hover と JS の .is-hover の二重化(Edgeで:hoverだけ効かない事例への対策)
+*/
 .mode-tab:not(.active):hover,
 .mode-tab:not(.active).is-hover{
-  color:var(--text); background-color:rgba(94,201,181,.28);
+  color:var(--text);
+  -webkit-text-fill-color:var(--text);
+  background-color:rgba(94,201,181,.28);
+  box-shadow:inset 0 0 0 999px rgba(94,201,181,.28);
 }
 .mode-tab.active:hover,
 .mode-tab.active.is-hover{
   background-color:rgba(94,201,181,.12);
+  box-shadow:inset 0 0 0 999px rgba(94,201,181,.12);
 }
 #langSelect{
   flex:0 0 auto; align-self:center; margin-right:8px;

@@ -144,14 +144,30 @@ function switchMode(mode){
 document.getElementById('tabSvg').onclick = ()=> switchMode('svg');
 document.getElementById('tabHtml').onclick = ()=> switchMode('html');
 
-// CSSの:hoverが一部環境(特にEdge)でmode-tabにだけ効かない事例への対策。
-// pointerenter/leaveで.is-hoverクラスを付け外しし、style.css側の
-// .mode-tab.is-hover ルールで色を変える。クリックは従来どおり動く。
+// CSSの:hover / background-color が一部環境で mode-tab に効かない事例への対策。
+// 1) .is-hover クラス (style.css の box-shadow / background-color ルール)
+// 2) インラインの inset box-shadow (background-color が死んでも影は効くため)
+// クリックは従来どおり動く。
+function applyTabHover(tab, on){
+  tab.classList.toggle('is-hover', on);
+  if(on){
+    const active = tab.classList.contains('active');
+    const c = active ? 'rgba(94,201,181,.12)' : 'rgba(94,201,181,.28)';
+    tab.style.setProperty('box-shadow', 'inset 0 0 0 999px ' + c, 'important');
+    if(!active){
+      tab.style.setProperty('color', '#e8e9eb', 'important');
+      tab.style.setProperty('-webkit-text-fill-color', '#e8e9eb', 'important');
+    }
+  } else {
+    tab.style.removeProperty('box-shadow');
+    tab.style.removeProperty('color');
+    tab.style.removeProperty('-webkit-text-fill-color');
+  }
+}
 document.querySelectorAll('.mode-tab').forEach(tab=>{
-  tab.addEventListener('pointerenter', ()=> tab.classList.add('is-hover'));
-  tab.addEventListener('pointerleave', ()=> tab.classList.remove('is-hover'));
-  // タッチ後に:hoverが残る端末向け。ポインタがキャンセルされたら必ず外す
-  tab.addEventListener('pointercancel', ()=> tab.classList.remove('is-hover'));
+  tab.addEventListener('pointerenter', ()=> applyTabHover(tab, true));
+  tab.addEventListener('pointerleave', ()=> applyTabHover(tab, false));
+  tab.addEventListener('pointercancel', ()=> applyTabHover(tab, false));
 });
 
 const langSelect = document.getElementById('langSelect');
