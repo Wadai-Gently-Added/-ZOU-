@@ -33,11 +33,7 @@ const LANG_DE = {
     backupImportSuccess: "Backup importiert!",
 
     backupRestoreMenu: "Letzten Import rückgängig machen",
-
-    backupSyncMenu: "🔗 Mit Backup synchronisieren (nur Neues/Geändertes)",
-    mergeResultTitle: "Synchronisiert",
-    mergeAddedLabel: "Hinzugefügt",
-    mergeUpdatedLabel: "Aktualisiert",    backupRestoreSnapshotConfirm: "Dadurch wird der Zustand vor dem letzten Import wiederhergestellt und die aktuellen Daten überschrieben. Fortfahren?",
+    backupRestoreSnapshotConfirm: "Dadurch wird der Zustand vor dem letzten Import wiederhergestellt und die aktuellen Daten überschrieben. Fortfahren?",
     backupNoSnapshot: "Es gibt noch nichts wiederherzustellen (es wurde kein Backup importiert)",
 
     searchToggle: "🔍 Suchen/Ersetzen",

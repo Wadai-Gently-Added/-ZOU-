@@ -50,20 +50,30 @@ html,body{
 /* ---------- mode tabs ---------- */
 #modeTabs{
   display:flex; flex-shrink:0; border-bottom:1px solid var(--line); background:var(--panel);
+  position:relative; z-index:5; /* 上端付近で他要素にホバーを吸われないよう前面に */
 }
 .mode-tab{
-  flex:1; background:none; border:none; color:var(--sub);
+  flex:1; background-color:transparent; border:none; color:var(--sub);
   padding:10px 0; font-size:13px; font-weight:600;
-  border-bottom:2px solid transparent; cursor:pointer;
-  transition: background .15s ease, color .15s ease;
+  border-bottom:2px solid transparent;
+  cursor:pointer;
+  position:relative; z-index:1;
+  transition: color .15s ease, background-color .15s ease, border-bottom-color .15s ease;
 }
 .mode-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
-.mode-tab:active{ background:#262a31; }
+.mode-tab:active{ background-color:#262a31; }
 /* Edgeのタブのように、マウスカーソルが乗ってる時だけ色を変える。
-   @media(hover:hover)でマウス環境限定にする方式は、タッチ対応PCだと環境によって
-   正しく判定されないことがあったため、ここでは条件を付けずに常時有効にする
-   (タッチ端末でタップ後に一瞬色が残るのは実害が小さいトレードオフとして許容) */
-.mode-tab:not(.active):hover{ color:var(--text); background:rgba(94,201,181,.14); }
+   CSSの:hoverだけだと一部環境(特にEdge)でタブにだけ反応しない事例があったため、
+   JSが付ける.is-hoverクラスでも同じ見た目になるようにする(二重化)。
+   @media(hover:hover)は付けない(タッチ対応PCで判定が不安定なため) */
+.mode-tab:not(.active):hover,
+.mode-tab:not(.active).is-hover{
+  color:var(--text); background-color:rgba(94,201,181,.28);
+}
+.mode-tab.active:hover,
+.mode-tab.active.is-hover{
+  background-color:rgba(94,201,181,.12);
+}
 #langSelect{
   flex:0 0 auto; align-self:center; margin-right:8px;
   background:var(--panel); color:var(--sub); border:1px solid var(--line);
@@ -73,29 +83,30 @@ html,body{
   background:var(--panel); border:1px solid var(--line);
   color:var(--accent); font-size:12.5px; font-weight:600;
   padding:7px 10px; border-radius:8px; white-space:nowrap;
-  cursor:pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
+  cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 .topbtn:active{ background:#262a31; }
 .topbtn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); }
 .pillgroup{
-  display:flex; gap:2px; flex-shrink:0;
+  display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex-shrink:0;
 }
 .pillgroup button{
-  background:var(--panel); border:1px solid var(--line); border-radius:8px;
-  color:var(--accent); font-size:12.5px; font-weight:600; padding:7px 10px;
-  white-space:nowrap; cursor:pointer;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  background:var(--panel); border:none; color:var(--accent);
+  font-size:12.5px; font-weight:600; padding:7px 10px;
+  border-right:1px solid var(--line); white-space:nowrap;
+  cursor:pointer;
+  transition: background .15s ease, color .15s ease;
 }
+.pillgroup button:last-child{ border-right:none; }
 .pillgroup button:active{ background:#262a31; }
 /* 📂マイSVG/マイHTMLや🖊コードなど、上段のボタン全部にもカーソルを乗せた時の色変化を効かせる。
    こちらも同じ理由でメディアクエリの条件は付けない。
    以前使っていた色(#20242b)はボタンの地の色(#1c1f24)とほぼ同じ明るさで、
-   実際は変化してもほぼ見分けが付かなかったため、アクセントカラー系のはっきり違う色に変更。
-   さらに、📂マイSVGと＋登録が隙間無くくっついていると、片方だけ反応しても
-   「両方まとめて変わった」ように見えて分かりづらかったため、
-   ボタン同士に隙間を空けて1個ずつ独立した見た目にした */
-.topbtn:not(.active):hover{ background:rgba(94,201,181,.22); border-color:var(--accent); color:var(--text); }
-.pillgroup button:hover{ background:rgba(94,201,181,.22); border-color:var(--accent); color:var(--text); }
+   実際は変化してもほぼ見分けが付かなかったため、アクセントカラー系のはっきり違う色に変更
+   さらに不透明度を上げてホバー時の反応を分かりやすくした */
+.topbtn:not(.active):hover{ background:rgba(94,201,181,.32); border-color:var(--accent); color:var(--text); }
+.pillgroup button:hover{ background:rgba(94,201,181,.32); color:var(--text); }
 /* 画面が狭い時、タイトル+ボタン4つが1行に収まりきらず2段になってしまっていたのを解消。
    ボタンの余白と文字サイズを詰めて、折り返さず横1列に収める */
 @media (max-width:430px){

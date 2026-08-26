@@ -36,11 +36,7 @@ const LANG_EN = {
     backupImportSuccess: "Backup imported!",
 
     backupRestoreMenu: "Undo last import",
-
-    backupSyncMenu: "🔗 Sync with backup (merge new/updated only)",
-    mergeResultTitle: "Synced",
-    mergeAddedLabel: "Added",
-    mergeUpdatedLabel: "Updated",    backupRestoreSnapshotConfirm: "This restores the state just before your last import, overwriting current data. Continue?",
+    backupRestoreSnapshotConfirm: "This restores the state just before your last import, overwriting current data. Continue?",
     backupNoSnapshot: "Nothing to restore yet (no backup has been imported)",    // --- tabs / language ---
 
     searchToggle: "🔍 Find/Replace",

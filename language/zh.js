@@ -33,11 +33,7 @@ const LANG_ZH = {
     backupImportSuccess: "备份已导入！",
 
     backupRestoreMenu: "撤销上次导入",
-
-    backupSyncMenu: "🔗 与备份同步(仅合并新增/更新的部分)",
-    mergeResultTitle: "已同步",
-    mergeAddedLabel: "新增",
-    mergeUpdatedLabel: "更新",    backupRestoreSnapshotConfirm: "这将恢复到上次导入之前的状态，当前数据会被覆盖，是否继续？",
+    backupRestoreSnapshotConfirm: "这将恢复到上次导入之前的状态，当前数据会被覆盖，是否继续？",
     backupNoSnapshot: "目前没有可恢复的数据（尚未导入过备份）",
 
     searchToggle: "🔍 查找/替换",

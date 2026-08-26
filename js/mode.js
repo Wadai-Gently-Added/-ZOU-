@@ -144,6 +144,16 @@ function switchMode(mode){
 document.getElementById('tabSvg').onclick = ()=> switchMode('svg');
 document.getElementById('tabHtml').onclick = ()=> switchMode('html');
 
+// CSSの:hoverが一部環境(特にEdge)でmode-tabにだけ効かない事例への対策。
+// pointerenter/leaveで.is-hoverクラスを付け外しし、style.css側の
+// .mode-tab.is-hover ルールで色を変える。クリックは従来どおり動く。
+document.querySelectorAll('.mode-tab').forEach(tab=>{
+  tab.addEventListener('pointerenter', ()=> tab.classList.add('is-hover'));
+  tab.addEventListener('pointerleave', ()=> tab.classList.remove('is-hover'));
+  // タッチ後に:hoverが残る端末向け。ポインタがキャンセルされたら必ず外す
+  tab.addEventListener('pointercancel', ()=> tab.classList.remove('is-hover'));
+});
+
 const langSelect = document.getElementById('langSelect');
 langSelect.value = currentLanguage;
 langSelect.onchange = ()=> setLanguage(langSelect.value);
