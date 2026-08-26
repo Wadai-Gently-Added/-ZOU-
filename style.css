@@ -54,7 +54,8 @@ html,body{
 .mode-tab{
   flex:1; background:none; border:none; color:var(--sub);
   padding:10px 0; font-size:13px; font-weight:600;
-  border-bottom:2px solid transparent;
+  border-bottom:2px solid transparent; cursor:pointer;
+  transition: background .15s ease, color .15s ease;
 }
 .mode-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
 .mode-tab:active{ background:#262a31; }
@@ -72,6 +73,7 @@ html,body{
   background:var(--panel); border:1px solid var(--line);
   color:var(--accent); font-size:12.5px; font-weight:600;
   padding:7px 10px; border-radius:8px; white-space:nowrap;
+  cursor:pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .topbtn:active{ background:#262a31; }
 .topbtn.active{ background:var(--accent); color:#0d1210; border-color:var(--accent); }
@@ -81,7 +83,8 @@ html,body{
 .pillgroup button{
   background:var(--panel); border:1px solid var(--line); border-radius:8px;
   color:var(--accent); font-size:12.5px; font-weight:600; padding:7px 10px;
-  white-space:nowrap;
+  white-space:nowrap; cursor:pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .pillgroup button:active{ background:#262a31; }
 /* 📂マイSVG/マイHTMLや🖊コードなど、上段のボタン全部にもカーソルを乗せた時の色変化を効かせる。
