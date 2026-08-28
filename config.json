@@ -1,0 +1,23 @@
+{
+  "version": "v0.4.0-BOU-Edition",
+  "ai_presets": [
+    "ChatGPT",
+    "Claude",
+    "Gemini",
+    "Grok",
+    "Perplexity",
+    "MetaAI",
+    "Genspark",
+    "Copilot",
+    "GoogleAI",
+    "base44",
+    "Manus",
+    "その他"
+  ],
+  "stocks": {},
+  "push": {
+    "worker_url": "https://hou-worker.your-name.workers.dev",
+    "connect_key": "CHANGE_ME",
+    "vapid_public_key": "CHANGE_ME"
+  }
+}

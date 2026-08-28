@@ -1,0 +1,13 @@
+name = "hou-worker"
+main = "worker.js"
+compatibility_date = "2026-05-13"
+
+[[kv_namespaces]]
+binding = "HOU_KV"
+id = "CHANGE_ME_KV_ID"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+HOU_CONNECT_KEY = "CHANGE_ME_SECRET"
