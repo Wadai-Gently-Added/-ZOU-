@@ -338,9 +338,10 @@ function buildItemRow(item, i, groups, isTopLevel){
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
   const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
+  const lockBadge = item.locked ? `<span class="lock-badge" title="${STR.common.itemLockedTitle}">🔒</span>` : '';
   row.innerHTML = `
     ${handleHtml}
-    <div class="thumb">${thumbHtml}</div>
+    <div class="thumb">${thumbHtml}${lockBadge}</div>
     <div class="meta">
       <div class="name">${item.name}</div>
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -391,6 +392,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     const allGroups = getGroups();
     const opts = [];
     opts.push({ label: STR.common.itemMenuRename, onClick: ()=>{
+      if(item.locked){ alert(STR.common.lockedEditBlocked); return; }
       const newName = prompt(STR.common.itemRenamePrompt, item.name);
       if(newName === null || !newName.trim()) return;
       const cur = getSaved();
@@ -457,8 +459,18 @@ function buildItemRow(item, i, groups, isTopLevel){
       }});
     }
     opts.push({ label: STR.common.itemMenuDelete, onClick: ()=>{
+      if(item.locked){ alert(STR.common.lockedEditBlocked); return; }
       if(!confirm(STR.common.itemDeleteConfirm(item.name))) return;
       const cur = getSaved().filter(x=>x.id!==item.id);
+      setSaved(cur);
+      renderList();
+    }});
+    // 🔗同期で取り込まれたアイテムは自動でロックされ、誤って上書き/削除できないようにしてある。
+    // 解除は必ずこのメニューから明示的に行う操作にしている(誤操作防止)
+    opts.push({ label: item.locked ? STR.common.itemMenuUnlock : STR.common.itemMenuLock, onClick: ()=>{
+      const cur = getSaved();
+      const it = cur.find(x=>x.id===item.id);
+      if(it) it.locked = !it.locked;
       setSaved(cur);
       renderList();
     }});
@@ -487,6 +499,30 @@ function renderList(){
   listEl.innerHTML = '';
   if(items.length === 0){ emptyEl.style.display='block'; return; }
   emptyEl.style.display='none';
+
+  // 検索中は、グループの折りたたみ状態に関係なく該当するものだけを平らに一覧表示する
+  // (満員電車でも目的の1件にすぐ辿り着けるように)
+  const searchInput = document.getElementById('listSearchInput');
+  const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  if(searchTerm){
+    const matched = items.filter(it => it.name.toLowerCase().includes(searchTerm));
+    if(matched.length === 0){
+      const msg = document.createElement('div');
+      msg.style.cssText = 'padding:24px 10px; text-align:center; color:var(--sub); font-size:13px;';
+      msg.textContent = STR.common.searchListNoResult;
+      listEl.appendChild(msg);
+      return;
+    }
+    matched.forEach(item=>{
+      const idx = items.findIndex(it => it.id === item.id);
+      const block = document.createElement('div');
+      block.className = 'toplevel-block item-block';
+      block.appendChild(buildItemRow(item, idx, groups, true));
+      listEl.appendChild(block);
+    });
+    return; // 検索中はグループ構造やドラッグ並べ替えは表示しない
+  }
+
   const order = reconcileTopOrder(items, groups);
 
   order.forEach(entry=>{
@@ -626,6 +662,55 @@ document.getElementById('btnStartSelectPrint').onclick = ()=>{
   else{ enterPrintSelectMode(); }
 };
 
+// ---- 並べ替え(名前順/新しい順など、エクセルの並び替えボタンのようなもの) ----
+// グループ自体の並び順(topOrder内のgroupエントリ)と、グループ内/未グループのアイテムの並び順を
+// 同じ基準でまとめて並べ替える。1回並べ替えたら、その後はまた手動ドラッグでも動かせる
+function sortEverything(criteria){
+  if(!criteria) return;
+  const items = getSaved();
+  const groups = getGroups();
+
+  function cmpItems(a, b){
+    if(criteria === 'name-asc') return a.name.localeCompare(b.name, 'ja');
+    if(criteria === 'name-desc') return b.name.localeCompare(a.name, 'ja');
+    if(criteria === 'newest') return new Date(b.savedAt||0) - new Date(a.savedAt||0);
+    if(criteria === 'oldest') return new Date(a.savedAt||0) - new Date(b.savedAt||0);
+    return 0;
+  }
+  // グループ内での並びは、items配列自体の並び順を(ピン留めを除いて)そのまま使う作りなので、
+  // items配列を並べ替えるだけで、グループ内表示にもそのまま反映される
+  items.sort(cmpItems);
+  setSaved(items);
+
+  // グループ自体の並び順と、未グループのアイテムのtopOrder上の並び順も同じ基準で揃える
+  const order = getTopOrder();
+  const groupEntries = order.filter(e=>e.type==='group');
+  const itemEntries = order.filter(e=>e.type==='item');
+  const otherEntries = order.filter(e=>e.type!=='group' && e.type!=='item');
+  const groupById = new Map(groups.map(g=>[g.id,g]));
+  groupEntries.sort((ea,eb)=>{
+    const ga = groupById.get(ea.id), gb = groupById.get(eb.id);
+    if(!ga || !gb) return 0;
+    if(criteria === 'name-asc') return ga.name.localeCompare(gb.name, 'ja');
+    if(criteria === 'name-desc') return gb.name.localeCompare(ga.name, 'ja');
+    // グループには日付情報が無いため、新しい順/古い順の代わりにグループ作成順を使う
+    const ia = groups.indexOf(ga), ib = groups.indexOf(gb);
+    return criteria === 'newest' ? ib - ia : ia - ib;
+  });
+  const itemById = new Map(items.map(it=>[it.id,it]));
+  itemEntries.sort((ea,eb)=>{
+    const ia = itemById.get(ea.id), ib = itemById.get(eb.id);
+    if(!ia || !ib) return 0;
+    return cmpItems(ia, ib);
+  });
+  setTopOrder([...groupEntries, ...itemEntries, ...otherEntries]);
+  renderList();
+}
+document.getElementById('listSearchInput').addEventListener('input', renderList);
+document.getElementById('listSortSelect').addEventListener('change', (e)=>{
+  sortEverything(e.target.value);
+});
+
 function openList(){ closeAllSheets(); renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }
 function closeList(){ listSheet.classList.remove('open'); listBackdrop.classList.remove('open'); }
 document.getElementById('listBtn').onclick = openList;
@@ -741,11 +826,13 @@ function mergeBackup(file){
       incomingItems.forEach(inItem=>{
         const cur = byId.get(inItem.id);
         if(!cur){
+          inItem.locked = true; // 🔗同期で取り込んだものは自動でロック(かけ忘れによる誤編集を防ぐ)
           currentItems.push(inItem);
           byId.set(inItem.id, inItem);
           addedCount++;
         } else if(itemTimestamp(inItem) > itemTimestamp(cur)){
           Object.assign(cur, inItem);
+          cur.locked = true; // 共有元の方が新しい=向こうが正、という更新なのでこちらもロックする
           updatedCount++;
         }
       });

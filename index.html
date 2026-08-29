@@ -116,6 +116,16 @@ window.addEventListener('error', function(e){
   </h2>
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
   <input type="file" id="backupSyncFileInput" accept="application/json,.json" style="display:none;">
+  <div id="listSearchRow" style="display:flex; gap:6px; margin-bottom:8px;">
+    <input type="text" id="listSearchInput" placeholder="">
+    <select id="listSortSelect">
+      <option value=""></option>
+      <option value="name-asc"></option>
+      <option value="name-desc"></option>
+      <option value="newest"></option>
+      <option value="oldest"></option>
+    </select>
+  </div>
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
   <div id="savedEmpty" style="display:none"></div>
   <div id="printSelectBar" style="display:none;">
