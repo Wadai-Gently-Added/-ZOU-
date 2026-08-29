@@ -14,6 +14,21 @@ let currentSourceItemId = null; // 今表示中の内容が、マイSVG/マイHT
 let suppressClickUntil = 0;
 let isDirty = false;
 
+// iPhoneでiframe内の入力欄にキーボードが出た時、外側のツール全体(#app)の「高さ」だけでなく
+// 「上下の位置」自体もズレていく現象があったため(#appをposition:fixedにした上で)、
+// visualViewport(ブラウザが「実際に見えている範囲」を教えてくれる仕組み)を使って
+// 高さと上端位置の両方をその都度ピタッと同期し直す。iframe内の操作がきっかけで起きるズレにも対応できる
+if(window.visualViewport){
+  const appEl = document.getElementById('app');
+  const syncAppViewport = ()=>{
+    appEl.style.height = window.visualViewport.height + 'px';
+    appEl.style.top = window.visualViewport.offsetTop + 'px';
+  };
+  window.visualViewport.addEventListener('resize', syncAppViewport);
+  window.visualViewport.addEventListener('scroll', syncAppViewport);
+  syncAppViewport();
+}
+
 function applyTransform(){
   stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
@@ -110,7 +125,9 @@ function updateHtmlInteractButton(){
   if(!btn) return;
   if(currentMode !== 'html'){ btn.style.display = 'none'; return; }
   btn.style.display = '';
-  btn.textContent = htmlInteractMode ? STR.common.htmlModeViewLabel : STR.common.htmlModeInteractLabel;
+  // 文字を切り替える(閲覧⇄操作)と余計に紛らわしいという指摘を受けて、文字は固定にし、
+  // 「点灯してるかどうか」だけで今の状態を表そうにした
+  btn.textContent = STR.common.htmlModeInteractLabel;
   btn.classList.toggle('active', htmlInteractMode);
 }
 

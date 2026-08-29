@@ -27,6 +27,7 @@ html,body{
   max-width:100%; overflow-x:hidden;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  position:fixed; left:0; right:0; top:0;
 }
 /* 選択モードや長い言語ラベルなどで中の要素が伸びても、横方向にはみ出させず枠内に収める。
    flexの子要素はデフォルトでは中身の幅より縮まないため、min-width:0を全体に効かせて
