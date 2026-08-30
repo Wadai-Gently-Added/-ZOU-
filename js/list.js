@@ -505,7 +505,7 @@ function renderList(){
   const searchInput = document.getElementById('listSearchInput');
   const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
   if(searchTerm){
-    const matched = items.filter(it => it.name.toLowerCase().includes(searchTerm));
+    const matched = items.filter(it => (it.name||'').toLowerCase().includes(searchTerm));
     if(matched.length === 0){
       const msg = document.createElement('div');
       msg.style.cssText = 'padding:24px 10px; text-align:center; color:var(--sub); font-size:13px;';
@@ -671,8 +671,8 @@ function sortEverything(criteria){
   const groups = getGroups();
 
   function cmpItems(a, b){
-    if(criteria === 'name-asc') return a.name.localeCompare(b.name, 'ja');
-    if(criteria === 'name-desc') return b.name.localeCompare(a.name, 'ja');
+    if(criteria === 'name-asc') return (a.name||'').localeCompare(b.name||'', 'ja');
+    if(criteria === 'name-desc') return (b.name||'').localeCompare(a.name||'', 'ja');
     if(criteria === 'newest') return new Date(b.savedAt||0) - new Date(a.savedAt||0);
     if(criteria === 'oldest') return new Date(a.savedAt||0) - new Date(b.savedAt||0);
     return 0;
@@ -691,8 +691,8 @@ function sortEverything(criteria){
   groupEntries.sort((ea,eb)=>{
     const ga = groupById.get(ea.id), gb = groupById.get(eb.id);
     if(!ga || !gb) return 0;
-    if(criteria === 'name-asc') return ga.name.localeCompare(gb.name, 'ja');
-    if(criteria === 'name-desc') return gb.name.localeCompare(ga.name, 'ja');
+    if(criteria === 'name-asc') return (ga.name||'').localeCompare(gb.name||'', 'ja');
+    if(criteria === 'name-desc') return (gb.name||'').localeCompare(ga.name||'', 'ja');
     // グループには日付情報が無いため、新しい順/古い順の代わりにグループ作成順を使う
     const ia = groups.indexOf(ga), ib = groups.indexOf(gb);
     return criteria === 'newest' ? ib - ia : ia - ib;
