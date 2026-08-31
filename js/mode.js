@@ -53,17 +53,6 @@ function applyModeLabels(){
   setText('btnNewGroup', C.btnNewGroup);
   setText('btnStartSelectPrint', C.btnStartSelectPrint);
   setPlaceholder('listSearchInput', C.listSearchPlaceholder);
-  {
-    const sortSelect = document.getElementById('listSortSelect');
-    if(sortSelect){
-      const opts = sortSelect.querySelectorAll('option');
-      if(opts[0]) opts[0].textContent = C.sortNone;
-      if(opts[1]) opts[1].textContent = C.sortNameAsc;
-      if(opts[2]) opts[2].textContent = C.sortNameDesc;
-      if(opts[3]) opts[3].textContent = C.sortNewest;
-      if(opts[4]) opts[4].textContent = C.sortOldest;
-    }
-  }
   setText('savedEmpty', L.savedEmpty);
   setText('btnPrintSelectGo', C.btnPrintSelectGo);
   setText('btnPrintSelectCancel', C.cancel);

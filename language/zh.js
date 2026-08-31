@@ -91,7 +91,12 @@ const LANG_ZH = {
     sortNameDesc: "名称(Z→A)",
     sortNewest: "最新优先",
     sortOldest: "最旧优先",
-    searchListNoResult: "未找到匹配项",
+
+    sortGroupsMenu: "📁 分组顺序",
+    sortUngroupedMenu: "📄 未分组项目顺序",
+    sortGroupContentsMenu: "🔀 对该分组内容排序",
+    sortUndoMenu: "↩️ 撤销上次排序",
+    sortNoSnapshot: "目前没有可撤销的排序",    searchListNoResult: "未找到匹配项",
     lockedEditBlocked: "此项目已锁定。请先解锁后再编辑或删除。",
     itemMenuLock: "🔒 锁定",
     itemMenuUnlock: "🔓 解锁",

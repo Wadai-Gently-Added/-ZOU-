@@ -102,7 +102,12 @@ const LANG_EN = {
     sortNameDesc: "Name (Z→A)",
     sortNewest: "Newest first",
     sortOldest: "Oldest first",
-    searchListNoResult: "No matches found",
+
+    sortGroupsMenu: "📁 Group order",
+    sortUngroupedMenu: "📄 Ungrouped item order",
+    sortGroupContentsMenu: "🔀 Sort items in this group",
+    sortUndoMenu: "↩️ Undo last sort",
+    sortNoSnapshot: "Nothing to undo yet",    searchListNoResult: "No matches found",
     lockedEditBlocked: "This item is locked. Unlock it first to edit or delete it.",
     itemMenuLock: "🔒 Lock",
     itemMenuUnlock: "🔓 Unlock",

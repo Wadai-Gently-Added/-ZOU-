@@ -110,6 +110,7 @@ window.addEventListener('error', function(e){
     <span id="listSheetTitle">マイSVG</span>
     <span style="display:flex; gap:6px;">
       <button id="btnBackup" class="topbtn" style="padding:4px 10px;">🗄️</button>
+      <button id="btnSortMenu" class="topbtn" style="padding:4px 10px;">🔀</button>
       <button id="btnNewGroup" class="topbtn" style="padding:4px 10px;"></button>
       <button id="btnStartSelectPrint" class="topbtn" style="padding:4px 10px;"></button>
     </span>
@@ -118,13 +119,6 @@ window.addEventListener('error', function(e){
   <input type="file" id="backupSyncFileInput" accept="application/json,.json" style="display:none;">
   <div id="listSearchRow" style="display:flex; gap:6px; margin-bottom:8px;">
     <input type="text" id="listSearchInput" placeholder="">
-    <select id="listSortSelect">
-      <option value=""></option>
-      <option value="name-asc"></option>
-      <option value="name-desc"></option>
-      <option value="newest"></option>
-      <option value="oldest"></option>
-    </select>
   </div>
   <div id="savedList" style="overflow-y:auto; overflow-x:hidden;"></div>
   <div id="savedEmpty" style="display:none"></div>

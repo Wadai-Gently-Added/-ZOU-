@@ -91,7 +91,12 @@ const LANG_PT = {
     sortNameDesc: "Nome (Z→A)",
     sortNewest: "Mais recentes",
     sortOldest: "Mais antigos",
-    searchListNoResult: "Nenhum resultado encontrado",
+
+    sortGroupsMenu: "📁 Ordem dos grupos",
+    sortUngroupedMenu: "📄 Ordem dos itens sem grupo",
+    sortGroupContentsMenu: "🔀 Ordenar itens deste grupo",
+    sortUndoMenu: "↩️ Desfazer última ordenação",
+    sortNoSnapshot: "Ainda não há nada para desfazer",    searchListNoResult: "Nenhum resultado encontrado",
     lockedEditBlocked: "Este item está bloqueado. Desbloqueie primeiro para editar ou excluir.",
     itemMenuLock: "🔒 Bloquear",
     itemMenuUnlock: "🔓 Desbloquear",

@@ -91,7 +91,12 @@ const LANG_RU = {
     sortNameDesc: "Имя (Я→А)",
     sortNewest: "Сначала новые",
     sortOldest: "Сначала старые",
-    searchListNoResult: "Ничего не найдено",
+
+    sortGroupsMenu: "📁 Порядок групп",
+    sortUngroupedMenu: "📄 Порядок элементов вне групп",
+    sortGroupContentsMenu: "🔀 Сортировать элементы этой группы",
+    sortUndoMenu: "↩️ Отменить последнюю сортировку",
+    sortNoSnapshot: "Пока нечего отменять",    searchListNoResult: "Ничего не найдено",
     lockedEditBlocked: "Этот элемент заблокирован. Сначала разблокируйте его, чтобы редактировать или удалить.",
     itemMenuLock: "🔒 Заблокировать",
     itemMenuUnlock: "🔓 Разблокировать",

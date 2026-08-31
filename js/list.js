@@ -565,6 +565,7 @@ function renderList(){
               g.color = color; setGroups(groups); renderList();
             });
           }},
+          { label: STR.common.sortGroupContentsMenu, submenu: sortCriteriaSubmenu((criteria)=> sortGroupItems(g.id, criteria)) },
           { label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
             closeList();
             openGroupPrint(g.id, g.name, mode);
@@ -662,31 +663,53 @@ document.getElementById('btnStartSelectPrint').onclick = ()=>{
   else{ enterPrintSelectMode(); }
 };
 
-// ---- 並べ替え(名前順/新しい順など、エクセルの並び替えボタンのようなもの) ----
-// グループ自体の並び順(topOrder内のgroupエントリ)と、グループ内/未グループのアイテムの並び順を
-// 同じ基準でまとめて並べ替える。1回並べ替えたら、その後はまた手動ドラッグでも動かせる
-function sortEverything(criteria){
-  if(!criteria) return;
+// ---- 並べ替え(名前順/新しい順など) ----
+// 「まとめて全部」だと影響範囲が大きすぎて分かりにくいという指摘を受けて、
+// 「グループの中身だけ」「グループ自体の並び順だけ」「未グループの項目だけ」を
+// それぞれ独立して並べ替えられるようにした(お互いに影響しない)。
+// 並べ替える直前の状態は必ず退避しておき、「↩️元に戻す」で1回分だけ復元できる。
+function cmpItemsByCriteria(a, b, criteria){
+  if(criteria === 'name-asc') return (a.name||'').localeCompare(b.name||'', 'ja');
+  if(criteria === 'name-desc') return (b.name||'').localeCompare(a.name||'', 'ja');
+  if(criteria === 'newest') return new Date(b.savedAt||0) - new Date(a.savedAt||0);
+  if(criteria === 'oldest') return new Date(a.savedAt||0) - new Date(b.savedAt||0);
+  return 0;
+}
+function snapshotBeforeSort(){
+  const snap = {
+    savedAt: new Date().toISOString(),
+    items: localStorage.getItem(storeKey()),
+    groups: localStorage.getItem(groupsKey()),
+    topOrder: localStorage.getItem(topOrderKey())
+  };
+  try{ localStorage.setItem('zouPreSortSnapshot_' + currentMode, JSON.stringify(snap)); }catch(e){}
+}
+function restorePreSortSnapshot(){
+  let snap;
+  try{ snap = JSON.parse(localStorage.getItem('zouPreSortSnapshot_' + currentMode) || 'null'); }catch(e){ snap = null; }
+  if(!snap){ alert(STR.common.sortNoSnapshot); return; }
+  if(snap.items != null) localStorage.setItem(storeKey(), snap.items);
+  if(snap.groups != null) localStorage.setItem(groupsKey(), snap.groups);
+  if(snap.topOrder != null) localStorage.setItem(topOrderKey(), snap.topOrder);
+  renderList();
+}
+// グループ「の中身」だけを並べ替える。他のグループ・未グループ・グループの並び順には触らない
+function sortGroupItems(groupId, criteria){
+  snapshotBeforeSort();
   const items = getSaved();
+  const inGroup = items.filter(it => (it.group||null) === groupId);
+  const rest = items.filter(it => (it.group||null) !== groupId);
+  inGroup.sort((a,b)=> cmpItemsByCriteria(a, b, criteria));
+  setSaved([...rest, ...inGroup]);
+  renderList();
+}
+// グループ「自体」の並び順だけを並べ替える。各グループの中身・未グループの並びには触らない
+function sortGroupsOrder(criteria){
+  snapshotBeforeSort();
   const groups = getGroups();
-
-  function cmpItems(a, b){
-    if(criteria === 'name-asc') return (a.name||'').localeCompare(b.name||'', 'ja');
-    if(criteria === 'name-desc') return (b.name||'').localeCompare(a.name||'', 'ja');
-    if(criteria === 'newest') return new Date(b.savedAt||0) - new Date(a.savedAt||0);
-    if(criteria === 'oldest') return new Date(a.savedAt||0) - new Date(b.savedAt||0);
-    return 0;
-  }
-  // グループ内での並びは、items配列自体の並び順を(ピン留めを除いて)そのまま使う作りなので、
-  // items配列を並べ替えるだけで、グループ内表示にもそのまま反映される
-  items.sort(cmpItems);
-  setSaved(items);
-
-  // グループ自体の並び順と、未グループのアイテムのtopOrder上の並び順も同じ基準で揃える
   const order = getTopOrder();
-  const groupEntries = order.filter(e=>e.type==='group');
-  const itemEntries = order.filter(e=>e.type==='item');
-  const otherEntries = order.filter(e=>e.type!=='group' && e.type!=='item');
+  const groupSlots = [], groupEntries = [];
+  order.forEach((e,i)=>{ if(e.type==='group'){ groupSlots.push(i); groupEntries.push(e); } });
   const groupById = new Map(groups.map(g=>[g.id,g]));
   groupEntries.sort((ea,eb)=>{
     const ga = groupById.get(ea.id), gb = groupById.get(eb.id);
@@ -697,18 +720,46 @@ function sortEverything(criteria){
     const ia = groups.indexOf(ga), ib = groups.indexOf(gb);
     return criteria === 'newest' ? ib - ia : ia - ib;
   });
+  const newOrder = order.slice();
+  groupSlots.forEach((slot, i)=>{ newOrder[slot] = groupEntries[i]; });
+  setTopOrder(newOrder);
+  renderList();
+}
+// 未グループの項目「だけ」を並べ替える。グループの中身・グループ自体の並びには触らない
+function sortUngroupedOrder(criteria){
+  snapshotBeforeSort();
+  const items = getSaved();
+  const order = getTopOrder();
+  const itemSlots = [], itemEntries = [];
+  order.forEach((e,i)=>{ if(e.type==='item'){ itemSlots.push(i); itemEntries.push(e); } });
   const itemById = new Map(items.map(it=>[it.id,it]));
   itemEntries.sort((ea,eb)=>{
     const ia = itemById.get(ea.id), ib = itemById.get(eb.id);
     if(!ia || !ib) return 0;
-    return cmpItems(ia, ib);
+    return cmpItemsByCriteria(ia, ib, criteria);
   });
-  setTopOrder([...groupEntries, ...itemEntries, ...otherEntries]);
+  const newOrder = order.slice();
+  itemSlots.forEach((slot, i)=>{ newOrder[slot] = itemEntries[i]; });
+  setTopOrder(newOrder);
   renderList();
 }
+function sortCriteriaSubmenu(onPick){
+  return [
+    { label: STR.common.sortNameAsc, onClick: ()=> onPick('name-asc') },
+    { label: STR.common.sortNameDesc, onClick: ()=> onPick('name-desc') },
+    { label: STR.common.sortNewest, onClick: ()=> onPick('newest') },
+    { label: STR.common.sortOldest, onClick: ()=> onPick('oldest') }
+  ];
+}
 document.getElementById('listSearchInput').addEventListener('input', renderList);
-document.getElementById('listSortSelect').addEventListener('change', (e)=>{
-  sortEverything(e.target.value);
+document.getElementById('btnSortMenu').addEventListener('click', (ev)=>{
+  if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
+  const rect = ev.currentTarget.getBoundingClientRect();
+  showContextMenu(rect.left, rect.bottom + 4, [
+    { label: STR.common.sortGroupsMenu, submenu: sortCriteriaSubmenu(sortGroupsOrder) },
+    { label: STR.common.sortUngroupedMenu, submenu: sortCriteriaSubmenu(sortUngroupedOrder) },
+    { label: STR.common.sortUndoMenu, onClick: restorePreSortSnapshot }
+  ]);
 });
 
 function openList(){ closeAllSheets(); renderList(); listSheet.classList.add('open'); listBackdrop.classList.add('open'); }

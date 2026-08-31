@@ -102,7 +102,12 @@ const LANG_JA = {
     sortNameDesc: "名前(Z→A)",
     sortNewest: "新しい順",
     sortOldest: "古い順",
-    searchListNoResult: "見つからなかったよ",
+
+    sortGroupsMenu: "📁 グループの並び順",
+    sortUngroupedMenu: "📄 未グループの並び順",
+    sortGroupContentsMenu: "🔀 グループ内を並び替え",
+    sortUndoMenu: "↩️ 直前の並び替えを元に戻す",
+    sortNoSnapshot: "戻せる並び替えがまだ無いよ",    searchListNoResult: "見つからなかったよ",
     lockedEditBlocked: "これはロック中の項目だよ。編集や削除するには、先にロックを解除してね",
     itemMenuLock: "🔒 ロックする",
     itemMenuUnlock: "🔓 ロック解除",

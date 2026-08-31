@@ -91,7 +91,12 @@ const LANG_EL = {
     sortNameDesc: "Όνομα (Ω→Α)",
     sortNewest: "Νεότερα πρώτα",
     sortOldest: "Παλαιότερα πρώτα",
-    searchListNoResult: "Δεν βρέθηκαν αποτελέσματα",
+
+    sortGroupsMenu: "📁 Σειρά ομάδων",
+    sortUngroupedMenu: "📄 Σειρά στοιχείων χωρίς ομάδα",
+    sortGroupContentsMenu: "🔀 Ταξινόμηση στοιχείων αυτής της ομάδας",
+    sortUndoMenu: "↩️ Αναίρεση τελευταίας ταξινόμησης",
+    sortNoSnapshot: "Δεν υπάρχει ακόμη τίποτα για αναίρεση",    searchListNoResult: "Δεν βρέθηκαν αποτελέσματα",
     lockedEditBlocked: "Αυτό το στοιχείο είναι κλειδωμένο. Ξεκλειδώστε το πρώτα για επεξεργασία ή διαγραφή.",
     itemMenuLock: "🔒 Κλείδωμα",
     itemMenuUnlock: "🔓 Ξεκλείδωμα",

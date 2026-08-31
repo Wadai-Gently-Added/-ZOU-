@@ -91,7 +91,12 @@ const LANG_KO = {
     sortNameDesc: "이름(Z→A)",
     sortNewest: "최신순",
     sortOldest: "오래된순",
-    searchListNoResult: "검색 결과가 없습니다",
+
+    sortGroupsMenu: "📁 그룹 순서",
+    sortUngroupedMenu: "📄 미분류 항목 순서",
+    sortGroupContentsMenu: "🔀 이 그룹 내부 정렬",
+    sortUndoMenu: "↩️ 마지막 정렬 실행 취소",
+    sortNoSnapshot: "아직 되돌릴 정렬이 없습니다",    searchListNoResult: "검색 결과가 없습니다",
     lockedEditBlocked: "이 항목은 잠겨 있습니다. 편집하거나 삭제하려면 먼저 잠금을 해제하세요.",
     itemMenuLock: "🔒 잠금",
     itemMenuUnlock: "🔓 잠금 해제",
