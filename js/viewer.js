@@ -506,6 +506,13 @@ if(wakeSupported){
       requestWakeLock();
     }
   });
+  // iOS Safari(特にホーム画面追加時)は、視認できる状態のまま常時点灯が黙って解除される
+  // ことがあるため、visibilitychangeだけに頼らず、定期的にも生きてるか確認して再取得する
+  setInterval(()=>{
+    if(wakeLockWanted && document.visibilityState === 'visible' && !wakeLock){
+      requestWakeLock();
+    }
+  }, 15000);
 }
 
 /* ---- focus mode (UIを隠す) ---- */
