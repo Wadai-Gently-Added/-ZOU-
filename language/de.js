@@ -98,7 +98,8 @@ const LANG_DE = {
     sortUndoMenu: "↩️ Letzte Sortierung rückgängig machen",
     sortNoSnapshot: "Es gibt noch nichts rückgängig zu machen",    searchListNoResult: "Keine Treffer gefunden",
     lockedEditBlocked: "Dieses Element ist gesperrt. Zum Bearbeiten oder Löschen bitte zuerst entsperren.",
-    itemMenuLock: "🔒 Sperren",
+
+    lockedOpenCodeConfirm: "Dieses Element ist gesperrt und kann nicht direkt bearbeitet werden. Zum Bearbeiten eine Kopie erstellen?",    itemMenuLock: "🔒 Sperren",
     itemMenuUnlock: "🔓 Entsperren",
     itemLockedTitle: "Gesperrt (synchronisierte Daten)",    itemDuplicateSuffix: " (Kopie)",    itemMenuPrint: '🖨 Drucken',
     itemMenuNewGroup: '🆕 Neue Gruppe erstellen',

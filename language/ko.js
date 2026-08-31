@@ -98,7 +98,8 @@ const LANG_KO = {
     sortUndoMenu: "↩️ 마지막 정렬 실행 취소",
     sortNoSnapshot: "아직 되돌릴 정렬이 없습니다",    searchListNoResult: "검색 결과가 없습니다",
     lockedEditBlocked: "이 항목은 잠겨 있습니다. 편집하거나 삭제하려면 먼저 잠금을 해제하세요.",
-    itemMenuLock: "🔒 잠금",
+
+    lockedOpenCodeConfirm: "이 항목은 잠겨 있어 직접 편집할 수 없습니다. 편집하려면 사본을 만드시겠습니까?",    itemMenuLock: "🔒 잠금",
     itemMenuUnlock: "🔓 잠금 해제",
     itemLockedTitle: "잠김(동기화된 데이터)",    itemDuplicateSuffix: " (사본)",    itemMenuPrint: '🖨 인쇄',
     itemMenuNewGroup: '🆕 새 그룹 만들기',

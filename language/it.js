@@ -98,7 +98,8 @@ const LANG_IT = {
     sortUndoMenu: "↩️ Annulla ultimo ordinamento",
     sortNoSnapshot: "Non c'è ancora nulla da annullare",    searchListNoResult: "Nessun risultato trovato",
     lockedEditBlocked: "Questo elemento è bloccato. Sbloccalo prima di modificarlo o eliminarlo.",
-    itemMenuLock: "🔒 Blocca",
+
+    lockedOpenCodeConfirm: "Questo elemento è bloccato e non può essere modificato direttamente. Creare una copia da modificare?",    itemMenuLock: "🔒 Blocca",
     itemMenuUnlock: "🔓 Sblocca",
     itemLockedTitle: "Bloccato (dati sincronizzati)",    itemDuplicateSuffix: " (copia)",    itemMenuPrint: '🖨 Stampa',
     itemMenuNewGroup: '🆕 Crea nuovo gruppo',

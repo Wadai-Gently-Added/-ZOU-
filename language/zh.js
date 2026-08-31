@@ -98,7 +98,8 @@ const LANG_ZH = {
     sortUndoMenu: "↩️ 撤销上次排序",
     sortNoSnapshot: "目前没有可撤销的排序",    searchListNoResult: "未找到匹配项",
     lockedEditBlocked: "此项目已锁定。请先解锁后再编辑或删除。",
-    itemMenuLock: "🔒 锁定",
+
+    lockedOpenCodeConfirm: "此项目已锁定，无法直接编辑。是否创建副本进行编辑？",    itemMenuLock: "🔒 锁定",
     itemMenuUnlock: "🔓 解锁",
     itemLockedTitle: "已锁定(同步数据)",    itemDuplicateSuffix: " (副本)",    itemMenuPrint: '🖨 打印',
     itemMenuNewGroup: '🆕 新建分组',

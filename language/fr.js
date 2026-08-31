@@ -98,7 +98,8 @@ const LANG_FR = {
     sortUndoMenu: "↩️ Annuler le dernier tri",
     sortNoSnapshot: "Rien à annuler pour l'instant",    searchListNoResult: "Aucun résultat trouvé",
     lockedEditBlocked: "Cet élément est verrouillé. Déverrouillez-le d'abord pour le modifier ou le supprimer.",
-    itemMenuLock: "🔒 Verrouiller",
+
+    lockedOpenCodeConfirm: "Cet élément est verrouillé et ne peut pas être modifié directement. Créer une copie pour le modifier ?",    itemMenuLock: "🔒 Verrouiller",
     itemMenuUnlock: "🔓 Déverrouiller",
     itemLockedTitle: "Verrouillé (données synchronisées)",    itemDuplicateSuffix: " (copie)",    itemMenuPrint: '🖨 Imprimer',
     itemMenuNewGroup: '🆕 Créer un nouveau groupe',

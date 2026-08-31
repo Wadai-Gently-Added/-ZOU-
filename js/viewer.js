@@ -775,6 +775,39 @@ document.getElementById('codeSearchPrev').onclick = ()=> gotoMatch(-1);
 document.getElementById('codeReplaceOne').onclick = replaceCurrentMatch;
 document.getElementById('codeReplaceAll').onclick = replaceAllMatches;
 function openCode(){
+  // ロック中のアイテムをそのまま編集させてしまうと「編集できてるように見えるのに
+  // 保存は別物になる」で誤解を招くため、開く前にコピーを作るか確認する。
+  // ロックされていない場合は今まで通りそのまま開く
+  const sourceItem = currentSourceItemId ? getSaved().find(it => it.id === currentSourceItemId) : null;
+  if(sourceItem && sourceItem.locked){
+    if(!confirm(STR.common.lockedOpenCodeConfirm)) return;
+    const cur = getSaved();
+    const copy = {
+      id: 's' + Date.now() + Math.random().toString(36).slice(2,7),
+      name: sourceItem.name + STR.common.itemDuplicateSuffix,
+      content: sourceItem.content,
+      savedAt: new Date().toISOString(),
+      modifiedAt: new Date().toISOString(),
+      pinned: false,
+      group: sourceItem.group || null,
+      locked: false
+    };
+    const idx = cur.findIndex(x=>x.id===sourceItem.id);
+    cur.splice(idx + 1, 0, copy);
+    setSaved(cur);
+    const order = getTopOrder();
+    if(!copy.group){
+      const pos = order.findIndex(e=> e.type==='item' && e.id===sourceItem.id);
+      if(pos !== -1) order.splice(pos + 1, 0, { type:'item', id: copy.id });
+      setTopOrder(order);
+    }
+    loadContent(copy.content, copy.name);
+    currentSourceItemId = copy.id;
+    isDirty = false;
+    setDraftDirty(currentMode, false);
+    renderList();
+  }
+
   closeAllSheets();
   const initial = currentContentString() || '';
   codeBox.value = initial;

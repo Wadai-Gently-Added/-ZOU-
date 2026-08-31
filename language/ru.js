@@ -98,7 +98,8 @@ const LANG_RU = {
     sortUndoMenu: "↩️ Отменить последнюю сортировку",
     sortNoSnapshot: "Пока нечего отменять",    searchListNoResult: "Ничего не найдено",
     lockedEditBlocked: "Этот элемент заблокирован. Сначала разблокируйте его, чтобы редактировать или удалить.",
-    itemMenuLock: "🔒 Заблокировать",
+
+    lockedOpenCodeConfirm: "Этот элемент заблокирован, и его нельзя редактировать напрямую. Создать копию для редактирования?",    itemMenuLock: "🔒 Заблокировать",
     itemMenuUnlock: "🔓 Разблокировать",
     itemLockedTitle: "Заблокировано (синхронизированные данные)",    itemDuplicateSuffix: " (копия)",    itemMenuPrint: '🖨 Печать',
     itemMenuNewGroup: '🆕 Создать новую группу',

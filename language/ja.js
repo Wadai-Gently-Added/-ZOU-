@@ -109,7 +109,8 @@ const LANG_JA = {
     sortUndoMenu: "↩️ 直前の並び替えを元に戻す",
     sortNoSnapshot: "戻せる並び替えがまだ無いよ",    searchListNoResult: "見つからなかったよ",
     lockedEditBlocked: "これはロック中の項目だよ。編集や削除するには、先にロックを解除してね",
-    itemMenuLock: "🔒 ロックする",
+
+    lockedOpenCodeConfirm: "ロックがかかっているため直接編集できません。コピーを作って編集しますか？",    itemMenuLock: "🔒 ロックする",
     itemMenuUnlock: "🔓 ロック解除",
     itemLockedTitle: "ロック中(同期で取り込んだデータ)",    itemDuplicateSuffix: " (コピー)",    itemMenuPrint: '🖨 印刷',
     itemMenuNewGroup: '🆕 新しいグループを作る',

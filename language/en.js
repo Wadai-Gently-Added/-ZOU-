@@ -109,7 +109,8 @@ const LANG_EN = {
     sortUndoMenu: "↩️ Undo last sort",
     sortNoSnapshot: "Nothing to undo yet",    searchListNoResult: "No matches found",
     lockedEditBlocked: "This item is locked. Unlock it first to edit or delete it.",
-    itemMenuLock: "🔒 Lock",
+
+    lockedOpenCodeConfirm: "This item is locked and can't be edited directly. Create a copy to edit instead?",    itemMenuLock: "🔒 Lock",
     itemMenuUnlock: "🔓 Unlock",
     itemLockedTitle: "Locked (synced data)",    itemDuplicateSuffix: " (copy)",    itemMenuPrint: '🖨 Print',
     itemMenuNewGroup: '🆕 Create new group',

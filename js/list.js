@@ -474,6 +474,12 @@ function buildItemRow(item, i, groups, isTopLevel){
       setSaved(cur);
       renderList();
     }});
+    // 未グループのアイテムは、グループのヘッダーのような「帯」が無く並び替えの入り口が無かったため、
+    // 個別の右クリックメニューからも同じ操作(未グループ全体の並び替え・元に戻す)に辿り着けるようにする
+    if(!item.group){
+      opts.push({ label: STR.common.sortUngroupedMenu, submenu: sortCriteriaSubmenu(sortUngroupedOrder) });
+      opts.push({ label: STR.common.sortUndoMenu, onClick: restorePreSortSnapshot });
+    }
     showContextMenu(ev.clientX, ev.clientY, opts);
   });
   row.querySelector('.pin').addEventListener('click', (ev)=>{
@@ -566,6 +572,7 @@ function renderList(){
             });
           }},
           { label: STR.common.sortGroupContentsMenu, submenu: sortCriteriaSubmenu((criteria)=> sortGroupItems(g.id, criteria)) },
+          { label: STR.common.sortUndoMenu, onClick: restorePreSortSnapshot },
           { label: STR.common.itemMenuPrint, submenu: printSubmenuOptions((mode)=>{
             closeList();
             openGroupPrint(g.id, g.name, mode);
@@ -699,8 +706,12 @@ function sortGroupItems(groupId, criteria){
   const items = getSaved();
   const inGroup = items.filter(it => (it.group||null) === groupId);
   const rest = items.filter(it => (it.group||null) !== groupId);
-  inGroup.sort((a,b)=> cmpItemsByCriteria(a, b, criteria));
-  setSaved([...rest, ...inGroup]);
+  // ピン留めしたアイテムは、並び替えの影響を受けず今の位置のまま動かさない
+  // (「ピンが刺さってるのに勝手に動く」という報告への対応。並び替えの対象は未ピンのものだけ)
+  const pinned = inGroup.filter(it => it.pinned);
+  const unpinned = inGroup.filter(it => !it.pinned);
+  unpinned.sort((a,b)=> cmpItemsByCriteria(a, b, criteria));
+  setSaved([...rest, ...pinned, ...unpinned]);
   renderList();
 }
 // グループ「自体」の並び順だけを並べ替える。各グループの中身・未グループの並びには触らない
@@ -730,16 +741,23 @@ function sortUngroupedOrder(criteria){
   snapshotBeforeSort();
   const items = getSaved();
   const order = getTopOrder();
-  const itemSlots = [], itemEntries = [];
-  order.forEach((e,i)=>{ if(e.type==='item'){ itemSlots.push(i); itemEntries.push(e); } });
   const itemById = new Map(items.map(it=>[it.id,it]));
-  itemEntries.sort((ea,eb)=>{
+  // ピン留めしたアイテムは並び替えの対象から外し、今のスロット位置のまま動かさない
+  const unpinnedSlots = [], unpinnedEntries = [];
+  order.forEach((e,i)=>{
+    if(e.type!=='item') return;
+    const it = itemById.get(e.id);
+    if(it && it.pinned) return; // ピン留め分はスロットごと触らずスキップ
+    unpinnedSlots.push(i);
+    unpinnedEntries.push(e);
+  });
+  unpinnedEntries.sort((ea,eb)=>{
     const ia = itemById.get(ea.id), ib = itemById.get(eb.id);
     if(!ia || !ib) return 0;
     return cmpItemsByCriteria(ia, ib, criteria);
   });
   const newOrder = order.slice();
-  itemSlots.forEach((slot, i)=>{ newOrder[slot] = itemEntries[i]; });
+  unpinnedSlots.forEach((slot, i)=>{ newOrder[slot] = unpinnedEntries[i]; });
   setTopOrder(newOrder);
   renderList();
 }

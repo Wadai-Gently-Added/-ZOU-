@@ -98,7 +98,8 @@ const LANG_EL = {
     sortUndoMenu: "↩️ Αναίρεση τελευταίας ταξινόμησης",
     sortNoSnapshot: "Δεν υπάρχει ακόμη τίποτα για αναίρεση",    searchListNoResult: "Δεν βρέθηκαν αποτελέσματα",
     lockedEditBlocked: "Αυτό το στοιχείο είναι κλειδωμένο. Ξεκλειδώστε το πρώτα για επεξεργασία ή διαγραφή.",
-    itemMenuLock: "🔒 Κλείδωμα",
+
+    lockedOpenCodeConfirm: "Αυτό το στοιχείο είναι κλειδωμένο και δεν μπορεί να επεξεργαστεί απευθείας. Δημιουργία αντιγράφου για επεξεργασία;",    itemMenuLock: "🔒 Κλείδωμα",
     itemMenuUnlock: "🔓 Ξεκλείδωμα",
     itemLockedTitle: "Κλειδωμένο (συγχρονισμένα δεδομένα)",    itemDuplicateSuffix: " (αντίγραφο)",    itemMenuPrint: '🖨 Εκτύπωση',
     itemMenuNewGroup: '🆕 Δημιουργία νέας ομάδας',
