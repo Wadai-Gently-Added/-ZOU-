@@ -300,6 +300,10 @@ textarea#pasteArea{
 #printSelectCount{ flex:1; }
 .saved-item .handle.locked{ cursor:default; font-size:14px; }
 .saved-item.pinned{ background:rgba(255,255,255,.03); }
+/* ロック中(🔗同期で取り込んだ)アイテムは、コピーと見た目がほぼ同じで見分けづらいという
+   指摘を受けて、左端に色帯を付けた。帯が無ければ自由に編集できる(コピーも含む)ものだと
+   一瞬で分かるようにする */
+.saved-item.locked{ border-left:3px solid #e0b85c; padding-left:1px; }
 
 .toplevel-block{ margin-top:6px; }
 .toplevel-block.dragging-block{

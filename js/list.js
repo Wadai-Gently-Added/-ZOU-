@@ -326,7 +326,7 @@ function pickGroupColor(callback){
 //  グループ間の移動は反映される)
 function buildItemRow(item, i, groups, isTopLevel){
   const row = document.createElement('div');
-  row.className = 'saved-item' + (item.pinned ? ' pinned' : '');
+  row.className = 'saved-item' + (item.pinned ? ' pinned' : '') + (item.locked ? ' locked' : '');
   row.dataset.origIdx = i;
   row.dataset.itemId = item.id;
   row.dataset.group = item.group || '';
@@ -682,22 +682,30 @@ function cmpItemsByCriteria(a, b, criteria){
   if(criteria === 'oldest') return new Date(a.savedAt||0) - new Date(b.savedAt||0);
   return 0;
 }
+// 「元に戻す」は並び順だけを覚えておき、ピン留め・ロック・名前などの中身は「今の状態」を
+// そのまま活かす作りにしてある。丸ごとのスナップショットにしてしまうと、並び替えた後に
+// ピン留めなどの別の変更をしてから元に戻した時、その別の変更まで巻き戻ってしまうため
 function snapshotBeforeSort(){
   const snap = {
     savedAt: new Date().toISOString(),
-    items: localStorage.getItem(storeKey()),
-    groups: localStorage.getItem(groupsKey()),
-    topOrder: localStorage.getItem(topOrderKey())
+    itemIdOrder: getSaved().map(it=>it.id), // items配列の並び順(idの列)だけ覚えておく
+    topOrder: getTopOrder() // group/itemの並び順(オブジェクトごと)
   };
   try{ localStorage.setItem('zouPreSortSnapshot_' + currentMode, JSON.stringify(snap)); }catch(e){}
 }
 function restorePreSortSnapshot(){
   let snap;
   try{ snap = JSON.parse(localStorage.getItem('zouPreSortSnapshot_' + currentMode) || 'null'); }catch(e){ snap = null; }
-  if(!snap){ alert(STR.common.sortNoSnapshot); return; }
-  if(snap.items != null) localStorage.setItem(storeKey(), snap.items);
-  if(snap.groups != null) localStorage.setItem(groupsKey(), snap.groups);
-  if(snap.topOrder != null) localStorage.setItem(topOrderKey(), snap.topOrder);
+  if(!snap || !snap.itemIdOrder){ alert(STR.common.sortNoSnapshot); return; }
+  // 並び順の記録をもとに、今のアイテムの中身(ピン留め・ロック・名前など)はそのまま活かしつつ並べ直す
+  const current = getSaved();
+  const byId = new Map(current.map(it=>[it.id, it]));
+  const restored = snap.itemIdOrder.map(id=>byId.get(id)).filter(Boolean);
+  // 並べ替え後に新しく増えたアイテム(スナップショットに無いもの)は末尾に足して取りこぼしを防ぐ
+  const restoredIds = new Set(restored.map(it=>it.id));
+  current.forEach(it=>{ if(!restoredIds.has(it.id)) restored.push(it); });
+  setSaved(restored);
+  if(snap.topOrder) setTopOrder(snap.topOrder);
   renderList();
 }
 // グループ「の中身」だけを並べ替える。他のグループ・未グループ・グループの並び順には触らない
