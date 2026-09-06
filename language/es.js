@@ -24,7 +24,8 @@ const LANG_ES = {
     groupColorPickTitle: 'Elige un color de grupo',
     newGroupDefaultName: 'Nuevo grupo',
     itemDeleteConfirm: (name)=> `¿Eliminar "${name}"? Esta acción no se puede deshacer`,
-    groupDeleteConfirm: (name, noun)=> `¿Eliminar "${name}"? Sus elementos ${noun} no se eliminarán, solo se desagruparán`,
+
+    listCountSummary: (total, ungrouped)=> `${total} en total / ${ungrouped} sin grupo`,    groupDeleteConfirm: (name, noun)=> `¿Eliminar "${name}"? Sus elementos ${noun} no se eliminarán, solo se desagruparán`,
 
     backupExportMenu: "Exportar copia de seguridad (SVG + HTML)",
     backupImportMenu: "Importar copia de seguridad (sobrescribe SVG + HTML)",

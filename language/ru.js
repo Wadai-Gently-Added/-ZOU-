@@ -24,7 +24,8 @@ const LANG_RU = {
     groupColorPickTitle: 'Выберите цвет группы',
     newGroupDefaultName: 'Новая группа',
     itemDeleteConfirm: (name)=> `Удалить «${name}»? Это действие нельзя отменить`,
-    groupDeleteConfirm: (name, noun)=> `Удалить «${name}»? Элементы ${noun} не будут удалены, только разгруппированы`,
+
+    listCountSummary: (total, ungrouped)=> `Всего ${total} / без группы ${ungrouped}`,    groupDeleteConfirm: (name, noun)=> `Удалить «${name}»? Элементы ${noun} не будут удалены, только разгруппированы`,
 
     backupExportMenu: "Экспорт резервной копии (SVG + HTML)",
     backupImportMenu: "Импорт резервной копии (перезапишет SVG + HTML)",

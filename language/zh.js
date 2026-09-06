@@ -24,7 +24,8 @@ const LANG_ZH = {
     groupColorPickTitle: '请选择分组颜色',
     newGroupDefaultName: '新建分组',
     itemDeleteConfirm: (name)=> `确定删除"${name}"吗？此操作无法撤销`,
-    groupDeleteConfirm: (name, noun)=> `确定删除"${name}"吗？其中的${noun}不会被删除，只会取消分组`,
+
+    listCountSummary: (total, ungrouped)=> `共${total}项 / 未分组${ungrouped}项`,    groupDeleteConfirm: (name, noun)=> `确定删除"${name}"吗？其中的${noun}不会被删除，只会取消分组`,
 
     backupExportMenu: "导出备份（SVG + HTML 全部）",
     backupImportMenu: "导入备份（覆盖 SVG + HTML 全部）",

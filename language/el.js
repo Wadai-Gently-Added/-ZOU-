@@ -24,7 +24,8 @@ const LANG_EL = {
     groupColorPickTitle: 'Επιλέξτε χρώμα ομάδας',
     newGroupDefaultName: 'Νέα ομάδα',
     itemDeleteConfirm: (name)=> `Διαγραφή του «${name}»; Δεν μπορεί να αναιρεθεί`,
-    groupDeleteConfirm: (name, noun)=> `Διαγραφή του «${name}»; Τα στοιχεία ${noun} δεν θα διαγραφούν, απλώς θα αποχωριστούν από την ομάδα`,
+
+    listCountSummary: (total, ungrouped)=> `Σύνολο ${total} / χωρίς ομάδα ${ungrouped}`,    groupDeleteConfirm: (name, noun)=> `Διαγραφή του «${name}»; Τα στοιχεία ${noun} δεν θα διαγραφούν, απλώς θα αποχωριστούν από την ομάδα`,
 
     backupExportMenu: "Εξαγωγή αντιγράφου (SVG + HTML)",
     backupImportMenu: "Εισαγωγή αντιγράφου (αντικαθιστά SVG + HTML)",

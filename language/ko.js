@@ -24,7 +24,8 @@ const LANG_KO = {
     groupColorPickTitle: '그룹 색상을 선택하세요',
     newGroupDefaultName: '새 그룹',
     itemDeleteConfirm: (name)=> `"${name}"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다`,
-    groupDeleteConfirm: (name, noun)=> `"${name}"을(를) 삭제하시겠습니까? ${noun} 항목은 삭제되지 않고 그룹에서만 해제됩니다`,
+
+    listCountSummary: (total, ungrouped)=> `총 ${total}건 / 미분류 ${ungrouped}건`,    groupDeleteConfirm: (name, noun)=> `"${name}"을(를) 삭제하시겠습니까? ${noun} 항목은 삭제되지 않고 그룹에서만 해제됩니다`,
 
     backupExportMenu: "백업 내보내기 (SVG + HTML 모두)",
     backupImportMenu: "백업 가져오기 (SVG + HTML 모두 덮어쓰기)",

@@ -503,6 +503,15 @@ function renderList(){
   const listEl = document.getElementById('savedList');
   const emptyEl = document.getElementById('savedEmpty');
   listEl.innerHTML = '';
+
+  // オンラインからまとめて取り込んだ時などに増減が分かりやすいよう、全体件数と
+  // 未グループの件数を検索欄の下に出しておく(グループごとの件数は各グループ名の横に表示)
+  const summaryEl = document.getElementById('listCountSummary');
+  if(summaryEl){
+    const ungroupedCount = items.filter(it => !it.group).length;
+    summaryEl.textContent = STR.common.listCountSummary(items.length, ungroupedCount);
+  }
+
   if(items.length === 0){ emptyEl.style.display='block'; return; }
   emptyEl.style.display='none';
 
@@ -597,17 +606,22 @@ function renderList(){
       if(g.collapsed) body.style.display = 'none';
       block.appendChild(body);
 
+      let groupItemCount = 0;
       try{
         const itemsWithIdx = items
           .map((item,i)=>({item,i}))
           .filter(o => (o.item.group||null) === g.id)
           .sort((a,b)=> (b.item.pinned?1:0) - (a.item.pinned?1:0));
+        groupItemCount = itemsWithIdx.length;
         itemsWithIdx.forEach(({item,i})=>{
           body.appendChild(buildItemRow(item, i, groups, false));
         });
       }catch(err){
         console.error('group item render failed', err);
       }
+      // オンラインからまとめて取り込んだ時などに増減が分かりやすいよう、グループ名の横に件数を出す
+      const nameEl = header.querySelector('.group-name');
+      if(nameEl) nameEl.textContent = `${g.name} (${groupItemCount})`;
 
       attachTopLevelDrag(block);
       listEl.appendChild(block);

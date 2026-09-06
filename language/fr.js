@@ -24,7 +24,8 @@ const LANG_FR = {
     groupColorPickTitle: 'Choisissez une couleur de groupe',
     newGroupDefaultName: 'Nouveau groupe',
     itemDeleteConfirm: (name)=> `Supprimer « ${name} » ? Action irréversible`,
-    groupDeleteConfirm: (name, noun)=> `Supprimer « ${name} » ? Les éléments ${noun} ne seront pas supprimés, juste dissociés`,
+
+    listCountSummary: (total, ungrouped)=> `${total} au total / ${ungrouped} sans groupe`,    groupDeleteConfirm: (name, noun)=> `Supprimer « ${name} » ? Les éléments ${noun} ne seront pas supprimés, juste dissociés`,
 
     backupExportMenu: "Exporter la sauvegarde (SVG + HTML)",
     backupImportMenu: "Importer une sauvegarde (écrase SVG + HTML)",

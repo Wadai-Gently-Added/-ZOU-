@@ -27,7 +27,8 @@ const LANG_EN = {
     groupColorPickTitle: 'Choose a group color',
     newGroupDefaultName: 'New Group',
     itemDeleteConfirm: (name)=> `Delete "${name}"? This cannot be undone`,
-    groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`,
+
+    listCountSummary: (total, ungrouped)=> `${total} total / ${ungrouped} ungrouped`,    groupDeleteConfirm: (name, noun)=> `Delete "${name}"? Its ${noun} items will not be deleted, just ungrouped`,
 
     backupExportMenu: "Export backup (SVG + HTML both)",
     backupImportMenu: "Import backup (overwrites SVG + HTML both)",

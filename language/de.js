@@ -24,7 +24,8 @@ const LANG_DE = {
     groupColorPickTitle: 'Gruppenfarbe auswählen',
     newGroupDefaultName: 'Neue Gruppe',
     itemDeleteConfirm: (name)=> `„${name}" löschen? Dies kann nicht rückgängig gemacht werden`,
-    groupDeleteConfirm: (name, noun)=> `„${name}" löschen? Die ${noun}-Elemente werden nicht gelöscht, nur aus der Gruppe entfernt`,
+
+    listCountSummary: (total, ungrouped)=> `${total} insgesamt / ${ungrouped} ohne Gruppe`,    groupDeleteConfirm: (name, noun)=> `„${name}" löschen? Die ${noun}-Elemente werden nicht gelöscht, nur aus der Gruppe entfernt`,
 
     backupExportMenu: "Backup exportieren (SVG + HTML)",
     backupImportMenu: "Backup importieren (überschreibt SVG + HTML)",

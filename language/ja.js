@@ -27,7 +27,8 @@ const LANG_JA = {
     groupColorPickTitle: 'グループの色を選んでね',
     newGroupDefaultName: '新しいグループ',
     itemDeleteConfirm: (name)=> `「${name}」を削除する？元に戻せないよ`,
-    groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`,
+
+    listCountSummary: (total, ungrouped)=> `全${total}件 / グループ外 ${ungrouped}件`,    groupDeleteConfirm: (name, noun)=> `「${name}」を削除する？中の${noun}は消えずにバラバラに戻るよ`,
 
     backupExportMenu: "バックアップを書き出す（SVG＋HTML両方）",
     backupImportMenu: "バックアップを読み込む（SVG＋HTML両方を上書き）",

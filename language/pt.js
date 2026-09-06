@@ -24,7 +24,8 @@ const LANG_PT = {
     groupColorPickTitle: 'Escolha uma cor de grupo',
     newGroupDefaultName: 'Novo grupo',
     itemDeleteConfirm: (name)=> `Excluir "${name}"? Isso não pode ser desfeito`,
-    groupDeleteConfirm: (name, noun)=> `Excluir "${name}"? Os itens de ${noun} não serão excluídos, apenas desagrupados`,
+
+    listCountSummary: (total, ungrouped)=> `${total} no total / ${ungrouped} sem grupo`,    groupDeleteConfirm: (name, noun)=> `Excluir "${name}"? Os itens de ${noun} não serão excluídos, apenas desagrupados`,
 
     backupExportMenu: "Exportar backup (SVG + HTML)",
     backupImportMenu: "Importar backup (substitui SVG + HTML)",
