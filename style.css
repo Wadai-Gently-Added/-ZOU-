@@ -305,6 +305,20 @@ textarea#pasteArea{
    一瞬で分かるようにする */
 .saved-item.locked{ border-left:3px solid #e0b85c; padding-left:1px; }
 
+/* マイSVG/マイHTMLリストの行ホバー（Edgeのタブっぽく「今どこ乗ってるか」を分かりやすく）
+   タブや上部ボタンと同じ方針で @media(hover:hover) は付けない。
+   2in1/タッチ端末でタップ後に一瞬色が残るのは許容トレードオフ */
+.saved-item:hover{
+  background: rgba(94,201,181,.14);
+}
+.saved-item.pinned:hover{
+  background: rgba(94,201,181,.18);
+}
+.group-header:hover{
+  background: rgba(94,201,181,.10);
+  border-radius: 6px;
+}
+
 .toplevel-block{ margin-top:6px; }
 .toplevel-block.dragging-block{
   background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
@@ -328,6 +342,7 @@ textarea#pasteArea{
   background:none; border:none; color:var(--text); text-align:left;
   padding:9px 10px; font-size:12.5px; border-radius:6px;
 }
+.ctx-menu button:hover{ background:rgba(94,201,181,.14); }
 .ctx-menu button:active{ background:#262a31; }
 .ctx-menu-item{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
