@@ -273,9 +273,19 @@ textarea#pasteArea{
   cursor:pointer; /* 行全体をクリックで読込できることが分かるように */
 }
 .saved-item .thumb{
-  width:44px; height:44px; border-radius:8px; background:#101215;
+  width:44px; height:44px; border-radius:8px;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
   overflow:hidden; border:1px solid var(--line); position:relative;
+  /* 単色の暗い背景だと、黒い線/塗りのSVGが同化して見えなくなるバグがあったため、
+     どんな色の絵でも埋もれない市松模様(#viewerWrapの透過表示と同じ考え方)にした */
+  background-color:#d9dadd;
+  background-image:
+    linear-gradient(45deg, #eceded 25%, transparent 25%),
+    linear-gradient(-45deg, #eceded 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eceded 75%),
+    linear-gradient(-45deg, transparent 75%, #eceded 75%);
+  background-size:8px 8px;
+  background-position:0 0, 0 4px, 4px -4px, -4px 0px;
 }
 .saved-item .thumb svg{ width:100%; height:100%; }
 .saved-item .lock-badge{
@@ -305,20 +315,6 @@ textarea#pasteArea{
    一瞬で分かるようにする */
 .saved-item.locked{ border-left:3px solid #e0b85c; padding-left:1px; }
 
-/* マイSVG/マイHTMLリストの行ホバー（Edgeのタブっぽく「今どこ乗ってるか」を分かりやすく）
-   タブや上部ボタンと同じ方針で @media(hover:hover) は付けない。
-   2in1/タッチ端末でタップ後に一瞬色が残るのは許容トレードオフ */
-.saved-item:hover{
-  background: rgba(94,201,181,.14);
-}
-.saved-item.pinned:hover{
-  background: rgba(94,201,181,.18);
-}
-.group-header:hover{
-  background: rgba(94,201,181,.10);
-  border-radius: 6px;
-}
-
 .toplevel-block{ margin-top:6px; }
 .toplevel-block.dragging-block{
   background:var(--panel); box-shadow:0 4px 14px rgba(0,0,0,.4); border-radius:8px; opacity:.95;
@@ -342,7 +338,6 @@ textarea#pasteArea{
   background:none; border:none; color:var(--text); text-align:left;
   padding:9px 10px; font-size:12.5px; border-radius:6px;
 }
-.ctx-menu button:hover{ background:rgba(94,201,181,.14); }
 .ctx-menu button:active{ background:#262a31; }
 .ctx-menu-item{
   display:flex; align-items:center; justify-content:space-between; gap:10px;

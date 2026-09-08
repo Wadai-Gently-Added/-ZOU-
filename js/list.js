@@ -540,6 +540,16 @@ function renderList(){
 
   const order = reconcileTopOrder(items, groups);
 
+  // ピン留めしたアイテムを一覧の上部にまとめる(グループ内では既にこの挙動があったが、
+  // 未グループのトップレベルには無かったため、ピンしても位置が変わらないバグになっていた)。
+  // topOrder(保存されてる手動の並び順)自体は書き換えず、表示の並びだけ一時的に入れ替える。
+  const pinnedLookup = new Map(items.map(it => [it.id, !!it.pinned]));
+  order.sort((a, b) => {
+    const aPinned = a.type === 'item' && pinnedLookup.get(a.id) ? 1 : 0;
+    const bPinned = b.type === 'item' && pinnedLookup.get(b.id) ? 1 : 0;
+    return bPinned - aPinned;
+  });
+
   order.forEach(entry=>{
     if(entry.type === 'group'){
       const g = groups.find(x=>x.id===entry.id);
