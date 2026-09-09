@@ -5,6 +5,29 @@
 const listSheet = document.getElementById('listSheet');
 const listBackdrop = document.getElementById('listBackdrop');
 
+function normalizeThumbSvg(svgString){
+  if(!svgString) return svgString;
+  try{
+    const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+    const svg = doc.querySelector('svg');
+    if(!svg || doc.querySelector('parsererror')) return svgString;
+    if(!svg.getAttribute('viewBox')){
+      // width/heightの単位(px, mm等)を除いた数値部分だけを取り出す
+      const num = v => v ? parseFloat(String(v).replace(/[^0-9.]/g, '')) : NaN;
+      const w = num(svg.getAttribute('width'));
+      const h = num(svg.getAttribute('height'));
+      if(w > 0 && h > 0) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+    // 枠(.thumb)側のCSS(width:100%; height:100%;)がそのまま効くよう、
+    // 固定px値のwidth/height属性は外す(viewBoxだけあれば縮小表示できる)
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    return svg.outerHTML;
+  }catch(err){
+    return svgString;
+  }
+}
+
 function commitOrder(container){
   const rows = Array.from(container.children);
   const arr = getSaved();
@@ -337,7 +360,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
-  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
+  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : normalizeThumbSvg(item.content);
   const lockBadge = item.locked ? `<span class="lock-badge" title="${STR.common.itemLockedTitle}">🔒</span>` : '';
   row.innerHTML = `
     ${handleHtml}
@@ -540,11 +563,16 @@ function renderList(){
 
   const order = reconcileTopOrder(items, groups);
 
-  // ピン留めしたアイテムを一覧の上部にまとめる(グループ内では既にこの挙動があったが、
-  // 未グループのトップレベルには無かったため、ピンしても位置が変わらないバグになっていた)。
+  // 表示順のルール(今後、設定で切り替えられるようにする余地あり):
+  //  1. グループ(フォルダ)は常に未グループのアイテムより上に固定表示する
+  //  2. 未グループのアイテム同士では、ピン留めしたものを先頭にまとめる
+  //     (グループ内のアイテムのピン留めは、この下のitem.pinnedによる別のsortで従来通り処理)
   // topOrder(保存されてる手動の並び順)自体は書き換えず、表示の並びだけ一時的に入れ替える。
   const pinnedLookup = new Map(items.map(it => [it.id, !!it.pinned]));
   order.sort((a, b) => {
+    const aIsGroup = a.type === 'group' ? 1 : 0;
+    const bIsGroup = b.type === 'group' ? 1 : 0;
+    if(aIsGroup !== bIsGroup) return bIsGroup - aIsGroup;
     const aPinned = a.type === 'item' && pinnedLookup.get(a.id) ? 1 : 0;
     const bPinned = b.type === 'item' && pinnedLookup.get(b.id) ? 1 : 0;
     return bPinned - aPinned;
