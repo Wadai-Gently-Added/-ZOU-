@@ -8,9 +8,12 @@ const listBackdrop = document.getElementById('listBackdrop');
 function normalizeThumbSvg(svgString){
   if(!svgString) return svgString;
   try{
-    const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
-    const svg = doc.querySelector('svg');
-    if(!svg || doc.querySelector('parsererror')) return svgString;
+    // 厳密なXMLパースだと軽い書式の乱れ(xmlns無し等)で即失敗するため、
+    // このアプリの他の箇所と同じくinnerHTML経由の緩いHTMLパースで読み込む
+    const holder = document.createElement('div');
+    holder.innerHTML = svgString;
+    const svg = holder.querySelector('svg');
+    if(!svg) return svgString;
     if(!svg.getAttribute('viewBox')){
       // width/heightの単位(px, mm等)を除いた数値部分だけを取り出す
       const num = v => v ? parseFloat(String(v).replace(/[^0-9.]/g, '')) : NaN;
