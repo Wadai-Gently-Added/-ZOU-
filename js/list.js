@@ -25,6 +25,11 @@ function normalizeThumbSvg(svgString){
     // 固定px値のwidth/height属性は外す(viewBoxだけあれば縮小表示できる)
     svg.removeAttribute('width');
     svg.removeAttribute('height');
+    // 属性だけでなく、インラインstyle(例: style="width:150px;height:150px;")の中に
+    // width/heightが直接書かれているケースがあり、これはCSSファイル側のルールより
+    // 優先度が高くて上書きしてしまうため、styleの中からもwidth/heightだけを取り除く
+    if(svg.style.width) svg.style.removeProperty('width');
+    if(svg.style.height) svg.style.removeProperty('height');
     return svg.outerHTML;
   }catch(err){
     return svgString;
