@@ -7,31 +7,46 @@ const listBackdrop = document.getElementById('listBackdrop');
 
 function normalizeThumbSvg(svgString){
   if(!svgString) return svgString;
+  let tmp = null;
   try{
-    // 厳密なXMLパースだと軽い書式の乱れ(xmlns無し等)で即失敗するため、
-    // このアプリの他の箇所と同じくinnerHTML経由の緩いHTMLパースで読み込む
-    const holder = document.createElement('div');
-    holder.innerHTML = svgString;
-    const svg = holder.querySelector('svg');
-    if(!svg) return svgString;
-    if(!svg.getAttribute('viewBox')){
-      // width/heightの単位(px, mm等)を除いた数値部分だけを取り出す
+    // 印刷プレビューの svgForThumbnail と同じ方針:
+    // 実際にDOMに載せて getBBox() で描画範囲を測り、viewBox を引き直す。
+    // viewBoxが無い/ズレている/width・heightだけあるSVGでも、サムネで全体が見えるようにする。
+    tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;';
+    tmp.innerHTML = svgString;
+    document.body.appendChild(tmp);
+    const svg = tmp.querySelector('svg');
+    if(!svg){
+      document.body.removeChild(tmp);
+      return svgString;
+    }
+    svg.style.overflow = 'visible';
+    let bbox = null;
+    try{ bbox = svg.getBBox(); }catch(e){}
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    if(svg.style.width) svg.style.removeProperty('width');
+    if(svg.style.height) svg.style.removeProperty('height');
+    if(bbox && bbox.width > 0 && bbox.height > 0){
+      // ごくわずかな余白を足して端が切れないようにする
+      const pad = Math.max(bbox.width, bbox.height) * 0.02;
+      svg.setAttribute('viewBox',
+        `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`);
+    } else if(!svg.getAttribute('viewBox')){
       const num = v => v ? parseFloat(String(v).replace(/[^0-9.]/g, '')) : NaN;
       const w = num(svg.getAttribute('width'));
       const h = num(svg.getAttribute('height'));
       if(w > 0 && h > 0) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     }
-    // 枠(.thumb)側のCSS(width:100%; height:100%;)がそのまま効くよう、
-    // 固定px値のwidth/height属性は外す(viewBoxだけあれば縮小表示できる)
-    svg.removeAttribute('width');
-    svg.removeAttribute('height');
-    // 属性だけでなく、インラインstyle(例: style="width:150px;height:150px;")の中に
-    // width/heightが直接書かれているケースがあり、これはCSSファイル側のルールより
-    // 優先度が高くて上書きしてしまうため、styleの中からもwidth/heightだけを取り除く
-    if(svg.style.width) svg.style.removeProperty('width');
-    if(svg.style.height) svg.style.removeProperty('height');
-    return svg.outerHTML;
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    const result = svg.outerHTML;
+    document.body.removeChild(tmp);
+    return result;
   }catch(err){
+    if(tmp && tmp.parentNode) tmp.parentNode.removeChild(tmp);
     return svgString;
   }
 }
@@ -234,6 +249,15 @@ function closeContextMenu(){
     ctxOutsideClickHandler = null;
   }
   if(ctxTriggerEl){ ctxTriggerEl.classList.remove('ctx-active'); ctxTriggerEl = null; }
+  // メニューを閉じた直後、ブラウザの :hover が「前の行」に残ったまま
+  // マウスを動かすと「前の行 + 新しい行」で二重に色が付くことがある（特に2in1/Edge）。
+  // 次の pointermove まで :hover スタイルを一時的に抑止して防ぐ。
+  document.body.classList.add('suppress-hover');
+  const clearSuppress = ()=>{
+    document.body.classList.remove('suppress-hover');
+    document.removeEventListener('pointermove', clearSuppress);
+  };
+  document.addEventListener('pointermove', clearSuppress, { once: true });
 }
 
 function positionFlyout(el, anchorRect){
