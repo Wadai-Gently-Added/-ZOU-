@@ -9,11 +9,10 @@ function normalizeThumbSvg(svgString){
   if(!svgString) return svgString;
   let tmp = null;
   try{
-    // 印刷プレビューの svgForThumbnail と同じ方針:
-    // 実際にDOMに載せて getBBox() で描画範囲を測り、viewBox を引き直す。
-    // viewBoxが無い/ズレている/width・heightだけあるSVGでも、サムネで全体が見えるようにする。
+    // getBBox を正しく取るために、計測用コンテナに実際のサイズを与える
+    // (width:0 height:0 だと多くのブラウザで bbox が空になる)
     tmp = document.createElement('div');
-    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;';
+    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px;overflow:hidden;visibility:hidden;pointer-events:none;';
     tmp.innerHTML = svgString;
     document.body.appendChild(tmp);
     const svg = tmp.querySelector('svg');
@@ -22,6 +21,10 @@ function normalizeThumbSvg(svgString){
       return svgString;
     }
     svg.style.overflow = 'visible';
+    svg.style.width = '200px';
+    svg.style.height = '200px';
+    // レイアウトを強制してから計測
+    void tmp.offsetHeight;
     let bbox = null;
     try{ bbox = svg.getBBox(); }catch(e){}
     svg.removeAttribute('width');
@@ -29,8 +32,7 @@ function normalizeThumbSvg(svgString){
     if(svg.style.width) svg.style.removeProperty('width');
     if(svg.style.height) svg.style.removeProperty('height');
     if(bbox && bbox.width > 0 && bbox.height > 0){
-      // ごくわずかな余白を足して端が切れないようにする
-      const pad = Math.max(bbox.width, bbox.height) * 0.02;
+      const pad = Math.max(bbox.width, bbox.height) * 0.03;
       svg.setAttribute('viewBox',
         `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`);
     } else if(!svg.getAttribute('viewBox')){
@@ -249,9 +251,9 @@ function closeContextMenu(){
     ctxOutsideClickHandler = null;
   }
   if(ctxTriggerEl){ ctxTriggerEl.classList.remove('ctx-active'); ctxTriggerEl = null; }
-  // メニューを閉じた直後、ブラウザの :hover が「前の行」に残ったまま
-  // マウスを動かすと「前の行 + 新しい行」で二重に色が付くことがある（特に2in1/Edge）。
-  // 次の pointermove まで :hover スタイルを一時的に抑止して防ぐ。
+  // 右クリック後の sticky :hover / 二重ハイライトを防ぐため、
+  // すべての .hovered を一旦消し、次の pointermove まで新規付与を抑止する
+  document.querySelectorAll('.hovered').forEach(n => n.classList.remove('hovered'));
   document.body.classList.add('suppress-hover');
   const clearSuppress = ()=>{
     document.body.classList.remove('suppress-hover');
@@ -548,6 +550,14 @@ function buildItemRow(item, i, groups, isTopLevel){
     setSaved(cur);
     renderList();
   });
+  // JS管理のホバー（ブラウザの sticky :hover を避けるため :hover ではなく .hovered を使う）
+  row.addEventListener('pointerenter', ()=>{
+    if(document.body.classList.contains('suppress-hover')) return;
+    row.classList.add('hovered');
+  });
+  row.addEventListener('pointerleave', ()=>{
+    row.classList.remove('hovered');
+  });
   // 修正: 以前は pinned なアイテムはドラッグ不可(グループ移動もできなかった)だったが、
   // ピン留めは「並び順の固定」のためのものであり、グループ移動まで封じる必要はないため解除。
   if(!isTopLevel && !inSelectMode) attachDrag(row);
@@ -671,6 +681,14 @@ function renderList(){
             renderList();
           }}
         ], header);
+      });
+      // JS管理のホバー（グループヘッダーも同様）
+      header.addEventListener('pointerenter', ()=>{
+        if(document.body.classList.contains('suppress-hover')) return;
+        header.classList.add('hovered');
+      });
+      header.addEventListener('pointerleave', ()=>{
+        header.classList.remove('hovered');
       });
 
       const body = document.createElement('div');

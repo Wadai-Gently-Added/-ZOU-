@@ -315,23 +315,14 @@ textarea#pasteArea{
    一瞬で分かるようにする */
 .saved-item.locked{ border-left:3px solid #e0b85c; padding-left:1px; }
 
-/* マイSVG/マイHTMLリストの行ホバー(Edgeのタブっぽく「今どこ乗ってるか」を分かりやすく) */
-.saved-item:hover{ background: rgba(94,201,181,.14); }
-.saved-item.pinned:hover{ background: rgba(94,201,181,.18); }
-.group-header:hover{ background: rgba(94,201,181,.10); border-radius:6px; }
+/* マイSVG/マイHTMLリストの行ホバー
+   ブラウザの sticky :hover を避けるため、:hover ではなく JS が付ける .hovered を使う */
+.saved-item.hovered{ background: rgba(94,201,181,.14); }
+.saved-item.pinned.hovered{ background: rgba(94,201,181,.18); }
+.group-header.hovered{ background: rgba(94,201,181,.10); border-radius:6px; }
 /* 右クリックメニューを開いてる間、Edgeのタブのように対象を選択状態っぽく見せておく */
 .saved-item.ctx-active{ background: rgba(94,201,181,.22); }
 .group-header.ctx-active{ background: rgba(94,201,181,.18); border-radius:6px; }
-
-/* メニュー閉鎖直後〜次のマウス移動まで :hover を抑止（二重ホバー防止） */
-body.suppress-hover .saved-item:hover,
-body.suppress-hover .saved-item.pinned:hover,
-body.suppress-hover .group-header:hover{
-  background: transparent;
-}
-body.suppress-hover .saved-item.pinned{
-  background: rgba(255,255,255,.03);
-}
 
 .toplevel-block{ margin-top:6px; }
 .toplevel-block.dragging-block{
