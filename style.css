@@ -319,6 +319,9 @@ textarea#pasteArea{
 .saved-item:hover{ background: rgba(94,201,181,.14); }
 .saved-item.pinned:hover{ background: rgba(94,201,181,.18); }
 .group-header:hover{ background: rgba(94,201,181,.10); border-radius:6px; }
+/* 右クリックメニューを開いてる間、Edgeのタブのように対象を選択状態っぽく見せておく */
+.saved-item.ctx-active{ background: rgba(94,201,181,.22); }
+.group-header.ctx-active{ background: rgba(94,201,181,.18); border-radius:6px; }
 
 .toplevel-block{ margin-top:6px; }
 .toplevel-block.dragging-block{

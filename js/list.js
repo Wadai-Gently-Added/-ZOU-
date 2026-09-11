@@ -224,6 +224,7 @@ function attachDrag(row){
 // 発火して即座に閉じてしまう不具合があった(連打すると2回目以降メニューが開かなくなる原因)。
 // closeContextMenu()の中で必ず明示的に除去することで解消する。
 let ctxOutsideClickHandler = null;
+let ctxTriggerEl = null;
 function closeContextMenu(){
   const el = document.getElementById('ctxMenu');
   if(el) el.remove();
@@ -232,6 +233,7 @@ function closeContextMenu(){
     document.removeEventListener('click', ctxOutsideClickHandler);
     ctxOutsideClickHandler = null;
   }
+  if(ctxTriggerEl){ ctxTriggerEl.classList.remove('ctx-active'); ctxTriggerEl = null; }
 }
 
 function positionFlyout(el, anchorRect){
@@ -245,8 +247,9 @@ function positionFlyout(el, anchorRect){
   el.style.top = top + 'px';
 }
 
-function showContextMenu(x, y, options){
+function showContextMenu(x, y, options, triggerEl){
   closeContextMenu();
+  if(triggerEl){ triggerEl.classList.add('ctx-active'); ctxTriggerEl = triggerEl; }
   const menu = document.createElement('div');
   menu.className = 'ctx-menu';
   menu.id = 'ctxMenu';
@@ -511,7 +514,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       opts.push({ label: STR.common.sortUngroupedMenu, submenu: sortCriteriaSubmenu(sortUngroupedOrder) });
       opts.push({ label: STR.common.sortUndoMenu, onClick: restorePreSortSnapshot });
     }
-    showContextMenu(ev.clientX, ev.clientY, opts);
+    showContextMenu(ev.clientX, ev.clientY, opts, row);
   });
   row.querySelector('.pin').addEventListener('click', (ev)=>{
     ev.stopPropagation();
@@ -643,7 +646,7 @@ function renderList(){
             setGroups(groups.filter(x=>x.id!==g.id));
             renderList();
           }}
-        ]);
+        ], header);
       });
 
       const body = document.createElement('div');
