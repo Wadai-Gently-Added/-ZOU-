@@ -5,54 +5,6 @@
 const listSheet = document.getElementById('listSheet');
 const listBackdrop = document.getElementById('listBackdrop');
 
-function normalizeThumbSvg(svgString){
-  if(!svgString) return svgString;
-  let tmp = null;
-  try{
-    // getBBox を正しく取るために、計測用コンテナに実際のサイズを与える
-    // (width:0 height:0 だと多くのブラウザで bbox が空になる)
-    tmp = document.createElement('div');
-    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px;overflow:hidden;visibility:hidden;pointer-events:none;';
-    tmp.innerHTML = svgString;
-    document.body.appendChild(tmp);
-    const svg = tmp.querySelector('svg');
-    if(!svg){
-      document.body.removeChild(tmp);
-      return svgString;
-    }
-    svg.style.overflow = 'visible';
-    svg.style.width = '200px';
-    svg.style.height = '200px';
-    // レイアウトを強制してから計測
-    void tmp.offsetHeight;
-    let bbox = null;
-    try{ bbox = svg.getBBox(); }catch(e){}
-    svg.removeAttribute('width');
-    svg.removeAttribute('height');
-    if(svg.style.width) svg.style.removeProperty('width');
-    if(svg.style.height) svg.style.removeProperty('height');
-    if(bbox && bbox.width > 0 && bbox.height > 0){
-      const pad = Math.max(bbox.width, bbox.height) * 0.03;
-      svg.setAttribute('viewBox',
-        `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`);
-    } else if(!svg.getAttribute('viewBox')){
-      const num = v => v ? parseFloat(String(v).replace(/[^0-9.]/g, '')) : NaN;
-      const w = num(svg.getAttribute('width'));
-      const h = num(svg.getAttribute('height'));
-      if(w > 0 && h > 0) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    }
-    svg.style.width = '100%';
-    svg.style.height = '100%';
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    const result = svg.outerHTML;
-    document.body.removeChild(tmp);
-    return result;
-  }catch(err){
-    if(tmp && tmp.parentNode) tmp.parentNode.removeChild(tmp);
-    return svgString;
-  }
-}
-
 function commitOrder(container){
   const rows = Array.from(container.children);
   const arr = getSaved();
@@ -241,7 +193,6 @@ function attachDrag(row){
 // 発火して即座に閉じてしまう不具合があった(連打すると2回目以降メニューが開かなくなる原因)。
 // closeContextMenu()の中で必ず明示的に除去することで解消する。
 let ctxOutsideClickHandler = null;
-let ctxTriggerEl = null;
 function closeContextMenu(){
   const el = document.getElementById('ctxMenu');
   if(el) el.remove();
@@ -250,16 +201,6 @@ function closeContextMenu(){
     document.removeEventListener('click', ctxOutsideClickHandler);
     ctxOutsideClickHandler = null;
   }
-  if(ctxTriggerEl){ ctxTriggerEl.classList.remove('ctx-active'); ctxTriggerEl = null; }
-  // 右クリック後の sticky :hover / 二重ハイライトを防ぐため、
-  // すべての .hovered を一旦消し、次の pointermove まで新規付与を抑止する
-  document.querySelectorAll('.hovered').forEach(n => n.classList.remove('hovered'));
-  document.body.classList.add('suppress-hover');
-  const clearSuppress = ()=>{
-    document.body.classList.remove('suppress-hover');
-    document.removeEventListener('pointermove', clearSuppress);
-  };
-  document.addEventListener('pointermove', clearSuppress, { once: true });
 }
 
 function positionFlyout(el, anchorRect){
@@ -273,9 +214,8 @@ function positionFlyout(el, anchorRect){
   el.style.top = top + 'px';
 }
 
-function showContextMenu(x, y, options, triggerEl){
+function showContextMenu(x, y, options){
   closeContextMenu();
-  if(triggerEl){ triggerEl.classList.add('ctx-active'); ctxTriggerEl = triggerEl; }
   const menu = document.createElement('div');
   menu.className = 'ctx-menu';
   menu.id = 'ctxMenu';
@@ -397,7 +337,7 @@ function buildItemRow(item, i, groups, isTopLevel){
     : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
-  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : normalizeThumbSvg(item.content);
+  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
   const lockBadge = item.locked ? `<span class="lock-badge" title="${STR.common.itemLockedTitle}">🔒</span>` : '';
   row.innerHTML = `
     ${handleHtml}
@@ -540,7 +480,7 @@ function buildItemRow(item, i, groups, isTopLevel){
       opts.push({ label: STR.common.sortUngroupedMenu, submenu: sortCriteriaSubmenu(sortUngroupedOrder) });
       opts.push({ label: STR.common.sortUndoMenu, onClick: restorePreSortSnapshot });
     }
-    showContextMenu(ev.clientX, ev.clientY, opts, row);
+    showContextMenu(ev.clientX, ev.clientY, opts);
   });
   row.querySelector('.pin').addEventListener('click', (ev)=>{
     ev.stopPropagation();
@@ -549,14 +489,6 @@ function buildItemRow(item, i, groups, isTopLevel){
     if(it) it.pinned = !it.pinned;
     setSaved(cur);
     renderList();
-  });
-  // JS管理のホバー（ブラウザの sticky :hover を避けるため :hover ではなく .hovered を使う）
-  row.addEventListener('pointerenter', ()=>{
-    if(document.body.classList.contains('suppress-hover')) return;
-    row.classList.add('hovered');
-  });
-  row.addEventListener('pointerleave', ()=>{
-    row.classList.remove('hovered');
   });
   // 修正: 以前は pinned なアイテムはドラッグ不可(グループ移動もできなかった)だったが、
   // ピン留めは「並び順の固定」のためのものであり、グループ移動まで封じる必要はないため解除。
@@ -607,21 +539,6 @@ function renderList(){
   }
 
   const order = reconcileTopOrder(items, groups);
-
-  // 表示順のルール(今後、設定で切り替えられるようにする余地あり):
-  //  1. グループ(フォルダ)は常に未グループのアイテムより上に固定表示する
-  //  2. 未グループのアイテム同士では、ピン留めしたものを先頭にまとめる
-  //     (グループ内のアイテムのピン留めは、この下のitem.pinnedによる別のsortで従来通り処理)
-  // topOrder(保存されてる手動の並び順)自体は書き換えず、表示の並びだけ一時的に入れ替える。
-  const pinnedLookup = new Map(items.map(it => [it.id, !!it.pinned]));
-  order.sort((a, b) => {
-    const aIsGroup = a.type === 'group' ? 1 : 0;
-    const bIsGroup = b.type === 'group' ? 1 : 0;
-    if(aIsGroup !== bIsGroup) return bIsGroup - aIsGroup;
-    const aPinned = a.type === 'item' && pinnedLookup.get(a.id) ? 1 : 0;
-    const bPinned = b.type === 'item' && pinnedLookup.get(b.id) ? 1 : 0;
-    return bPinned - aPinned;
-  });
 
   order.forEach(entry=>{
     if(entry.type === 'group'){
@@ -680,15 +597,7 @@ function renderList(){
             setGroups(groups.filter(x=>x.id!==g.id));
             renderList();
           }}
-        ], header);
-      });
-      // JS管理のホバー（グループヘッダーも同様）
-      header.addEventListener('pointerenter', ()=>{
-        if(document.body.classList.contains('suppress-hover')) return;
-        header.classList.add('hovered');
-      });
-      header.addEventListener('pointerleave', ()=>{
-        header.classList.remove('hovered');
+        ]);
       });
 
       const body = document.createElement('div');
