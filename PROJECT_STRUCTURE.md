@@ -201,3 +201,22 @@ svg-viewer/
 ### 検証
 - 全JS `node --check` 合格
 - 主要関数27個の定義/参照監査: 全て解決(storage/list/print/mode/viewer間の依存は破損なし)
+
+## 未実装ギャップの実装 その1: マイSVG一覧サムネイルのsvgForThumbnail統一(2026-09-27)
+上記の整理セッションで「保持したもの」に挙げた3点(.hovered/.ctx-active/表示順ソート)とは別に、
+仕分け資料に「①で解決済み」と記載されていたのに実際は`js/list.js`側に未反映だったことが
+裏取りで判明した項目。今回この1点だけ実装した。
+
+- `js/list.js` `buildItemRow()`: サムネイル用HTML(`thumbHtml`)の生成を、これまでの
+  `item.content`(生のSVGコードをそのまま挿入)から `svgForThumbnail(item.content)`
+  (`js/print.js`で定義済み、印刷プレビューと同じgetBBox実測方式)に変更。
+  viewBoxが無いSVGや、インラインstyle属性で幅/高さが上書きされているSVGでも、
+  一覧のサムネイルが正しく枠内に収まるようになる。
+- 読み込み順序(`print.js → list.js`)は既存のままで問題なし。`svgForThumbnail`は
+  グローバル関数として`print.js`で定義済みのため、参照エラーの心配なし。
+- 挙動が変わるのは「マイSVG一覧のサムネイル表示」のみ。保存/読込/印刷等の他機能には無影響。
+
+### 未実装のまま残っている項目(次回以降)
+- `.saved-item.hovered` / `.group-header.hovered` のCSSに対応するJS(mouseenter/leave等)の配線
+- `.ctx-active`(右クリックメニュー表示中のハイライト)のJS配線(`showContextMenu`に`triggerEl`引数を追加する形を想定)
+- マイSVG/マイHTML一覧の表示順で「グループを常に未グループより上に固定」「未グループ内はピン留めを先頭に」を強制するソートロジック(現状は`storage.js`の`reconcileTopOrder()`が保存済み順序をそのまま維持するのみで、この2つの優先ルールは未実装)
