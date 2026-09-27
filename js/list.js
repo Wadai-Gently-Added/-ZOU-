@@ -337,7 +337,10 @@ function buildItemRow(item, i, groups, isTopLevel){
     : `<span class="handle" title="${STR.common.dragHandleTitle}">⠿</span>`;
   const options = [`<option value="">${STR.common.noGroupOption}</option>`]
     .concat(groups.map(g => `<option value="${g.id}" ${item.group===g.id?'selected':''}>${g.name}</option>`));
-  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : item.content;
+  // サムネイルは印刷プレビューと同じsvgForThumbnail()(print.js)に統一。
+  // getBBoxで実描画範囲を測ってviewBoxを引き直すため、viewBox無し/インラインstyle優先で
+  // 縮小されなかったSVGでも正しく枠内に収まる(整理セッション後に発覚した未実装ギャップを解消)
+  const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : svgForThumbnail(item.content);
   const lockBadge = item.locked ? `<span class="lock-badge" title="${STR.common.itemLockedTitle}">🔒</span>` : '';
   row.innerHTML = `
     ${handleHtml}
