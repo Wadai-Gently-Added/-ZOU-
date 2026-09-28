@@ -16,6 +16,17 @@ function newItemId(){
   return 's' + Date.now() + Math.random().toString(36).slice(2,7);
 }
 
+// マイSVG/マイHTML一覧のサムネイル背景モード。'auto'(内容に応じて自動選択) / 'white' / 'black' / 'checker'。
+// SVG/HTMLモード共通の1設定として保存する(モードごとに分けると混乱しやすいため)。
+const THUMB_BG_KEY = 'thumbBgMode';
+function getThumbBgMode(){
+  const v = localStorage.getItem(THUMB_BG_KEY);
+  return (v === 'white' || v === 'black' || v === 'checker') ? v : 'auto';
+}
+function setThumbBgMode(mode){
+  localStorage.setItem(THUMB_BG_KEY, mode);
+}
+
 function getGroups(){
   try{ return JSON.parse(localStorage.getItem(groupsKey()) || '[]'); }
   catch(e){ return []; }

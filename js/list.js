@@ -341,10 +341,16 @@ function buildItemRow(item, i, groups, isTopLevel){
   // getBBoxで実描画範囲を測ってviewBoxを引き直すため、viewBox無し/インラインstyle優先で
   // 縮小されなかったSVGでも正しく枠内に収まる(整理セッション後に発覚した未実装ギャップを解消)
   const thumbHtml = currentMode === 'html' ? '<span style="font-size:20px;">📄</span>' : svgForThumbnail(item.content);
+  // サムネイル背景: 設定が「自動」の場合はSVGの色からその都度、明るい内容には黒背景/暗い内容には
+  // 白背景を選ぶ(detectThumbBgMode, print.js)。HTMLモードは絵文字アイコンのみなので自動判定は行わない
+  const bgSetting = getThumbBgMode();
+  const bgMode = (bgSetting === 'auto')
+    ? (currentMode === 'html' ? 'white' : detectThumbBgMode(item.content))
+    : bgSetting;
   const lockBadge = item.locked ? `<span class="lock-badge" title="${STR.common.itemLockedTitle}">🔒</span>` : '';
   row.innerHTML = `
     ${handleHtml}
-    <div class="thumb">${thumbHtml}${lockBadge}</div>
+    <div class="thumb thumb-bg-${bgMode}">${thumbHtml}${lockBadge}</div>
     <div class="meta">
       <div class="name">${item.name}</div>
       <div class="date">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -796,6 +802,18 @@ function sortCriteriaSubmenu(onPick){
   ];
 }
 document.getElementById('listSearchInput').addEventListener('input', renderList);
+document.getElementById('btnThumbBg').addEventListener('click', (ev)=>{
+  if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
+  const current = getThumbBgMode();
+  const mark = (mode)=> current === mode ? '✓ ' : '　';
+  const rect = ev.currentTarget.getBoundingClientRect();
+  showContextMenu(rect.left, rect.bottom + 4, [
+    { label: mark('auto') + STR.common.thumbBgAuto, onClick: ()=>{ setThumbBgMode('auto'); renderList(); } },
+    { label: mark('white') + STR.common.thumbBgWhite, onClick: ()=>{ setThumbBgMode('white'); renderList(); } },
+    { label: mark('black') + STR.common.thumbBgBlack, onClick: ()=>{ setThumbBgMode('black'); renderList(); } },
+    { label: mark('checker') + STR.common.thumbBgChecker, onClick: ()=>{ setThumbBgMode('checker'); renderList(); } }
+  ]);
+});
 document.getElementById('btnSortMenu').addEventListener('click', (ev)=>{
   if(document.getElementById('ctxMenu')){ closeContextMenu(); return; }
   const rect = ev.currentTarget.getBoundingClientRect();

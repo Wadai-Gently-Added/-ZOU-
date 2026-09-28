@@ -62,6 +62,47 @@ function svgForThumbnail(code){
   return code;
 }
 
+// サムネイル背景「自動」モード用: SVGコード中のfill/stroke色から大まかな明るさを推定し、
+// 内容が明るい(白系)なら'black'、暗い(黒系)なら'white'を返す(=内容と反対色の背景にして視認性を確保)。
+// 厳密な色計算ではなく簡易ヒューリスティック。色情報が拾えない場合はSVGのデフォルト塗り(黒)を
+// 想定して'white'を返す。fill="none"/transparentは無視。
+function detectThumbBgMode(code){
+  const matches = code.match(/(?:fill|stroke)\s*[:=]\s*["']?\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)'"]+\)|[a-zA-Z]+)/g) || [];
+  let totalLum = 0, count = 0;
+  matches.forEach(m=>{
+    const val = m.split(/[:=]/)[1].trim().replace(/["']/g, '');
+    if(val === 'none' || val === 'transparent' || val === 'currentColor') return;
+    const lum = colorToLuminance(val);
+    if(lum !== null){ totalLum += lum; count++; }
+  });
+  if(count === 0) return 'white';
+  return (totalLum / count) > 0.6 ? 'black' : 'white';
+}
+
+// 0(黒)〜1(白)の相対輝度を返す。#hex/#hex3/rgb()/rgba()と主要な色名のみ対応、それ以外はnull
+function colorToLuminance(val){
+  let r, g, b;
+  if(val[0] === '#'){
+    let hex = val.slice(1);
+    if(hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    if(hex.length < 6) return null;
+    r = parseInt(hex.slice(0,2), 16); g = parseInt(hex.slice(2,4), 16); b = parseInt(hex.slice(4,6), 16);
+  }else if(val.indexOf('rgb') === 0){
+    const nums = val.match(/[\d.]+/g);
+    if(!nums || nums.length < 3) return null;
+    r = Number(nums[0]); g = Number(nums[1]); b = Number(nums[2]);
+  }else{
+    const NAMED = { white:[255,255,255], black:[0,0,0], red:[255,0,0], green:[0,128,0],
+      blue:[0,0,255], gray:[128,128,128], grey:[128,128,128], yellow:[255,255,0],
+      orange:[255,165,0], purple:[128,0,128], pink:[255,192,203], brown:[165,42,42],
+      cyan:[0,255,255], magenta:[255,0,255], navy:[0,0,128], silver:[192,192,192] };
+    if(!NAMED[val]) return null;
+    [r, g, b] = NAMED[val];
+  }
+  if([r,g,b].some(v => isNaN(v))) return null;
+  return (0.299*r + 0.587*g + 0.114*b) / 255;
+}
+
 // 印刷の枠に埋め込む内容を用意する。SVGモードはgetBBoxでviewBoxを引き直して自動リサイズ、
 // HTMLモードはビューアと同様にsandbox化したiframeに隔離する(読み込んだHTML内のポップアップ等が
 // 印刷プレビュー画面ごと覆ってしまう事故を防ぐため。直接innerHTMLに差し込まない)
